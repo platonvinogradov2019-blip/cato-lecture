@@ -3,461 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Интерактивная лекция: Жизнь Катона Старшего</title>
+    <title>Конструктор и Презентер Интерактивных Лекций-Квестов</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700;900&family=Marcellus&display=swap" rel="stylesheet">
+    <!-- QR Code Generator JS library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        roman: {
+                            red: '#7A1C1C',
+                            darkRed: '#4A0E0E',
+                            gold: '#D4AF37',
+                            lightGold: '#F3E5AB',
+                            parchment: '#F4EBE1',
+                            darkParchment: '#E8D8C3',
+                            stone: '#2B2825',
+                            accent: '#B8860B'
+                        }
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        cinzelDeco: ['Cinzel Decorative', 'serif'],
+                        marcellus: ['Marcellus', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .font-roman { font-family: 'Cinzel', serif; }
+        body {
+            font-family: 'Marcellus', serif;
+            background-color: #1A1715;
+            color: #F4EBE1;
+            overflow-x: hidden;
+        }
+
+        .roman-card {
+            background: linear-gradient(135deg, rgba(43,40,37,0.95) 0%, rgba(26,23,21,0.98) 100%);
+            border: 2px solid #7A1C1C;
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(180deg, #FFF099 0%, #D4AF37 50%, #997A15 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .roman-image-frame {
+            position: relative;
+            border: 2px solid #D4AF37;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            border-radius: 0.75rem;
+        }
+
+        .roman-image-frame img {
+            transition: transform 0.7s ease, filter 0.5s ease;
+            filter: contrast(1.05) sepia(0.2);
+        }
+
+        .roman-image-overlay {
+            background: linear-gradient(0deg, rgba(26,23,21,0.95) 0%, rgba(26,23,21,0.4) 50%, rgba(0,0,0,0) 100%);
+        }
+
+        .fade-in-slide {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timer-bar {
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1A1715;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #7A1C1C;
+            border-radius: 4px;
+            border: 1px solid #D4AF37;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-red-950 via-stone-900 to-amber-950 text-amber-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col justify-between selection:bg-roman-red selection:text-roman-gold">
 
-    <!-- Верхняя панель (автоматически удаляется в режиме ?mode=voter) -->
-    <header id="app-header" class="bg-red-900/80 border-b border-amber-600/40 p-4 shadow-2xl backdrop-blur-md">
+    <!-- TOP HEADER / NAVBAR -->
+    <header id="app-header" class="bg-roman-darkRed border-b-2 border-roman-gold p-4 shadow-xl relative z-20">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <div class="bg-amber-500 p-2 rounded-xl text-red-950 font-bold shadow-lg">
-                    🏛️
-                </div>
+                <i class="fa-solid fa-landmark text-roman-gold text-3xl"></i>
                 <div>
-                    <h1 class="text-xl font-extrabold tracking-wide text-amber-300 font-roman">Катон Старший: Квест-Лекция</h1>
-                    <p class="text-xs text-amber-200/70">Интерактивный исторический симулятор</p>
+                    <h1 class="font-cinzel text-xl sm:text-2xl font-bold tracking-wider gold-gradient-text uppercase" id="app-lecture-title">
+                        Марк Порций Катон
+                    </h1>
                 </div>
-            </div>
-            
-            <!-- Переключатели режимов -->
-            <div class="flex items-center space-x-2 bg-red-950/80 p-1.5 rounded-xl border border-amber-600/30">
-                <button onclick="switchMode('presenter')" id="btn-mode-presenter" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-amber-500 text-red-950 shadow-md">
-                    📊 Презентация
-                </button>
-                <button onclick="switchMode('editor')" id="btn-mode-editor" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100">
-                    ✏️ Редактор
-                </button>
-                <button onclick="switchMode('voter')" id="btn-mode-voter" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100">
-                    📱 Пульт зрителя
-                </button>
             </div>
 
-            <!-- Кнопки управления -->
-            <div class="flex items-center space-x-2">
-                <button onclick="openQrModal()" class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all">
-                    📲 QR-код для зала
+            <!-- Header Controls & Mode Switcher -->
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+                <div class="bg-roman-stone border border-roman-gold/50 rounded-lg p-1 flex text-xs">
+                    <button id="nav-btn-presentation" onclick="switchMode('presentation')" class="px-3 py-1.5 rounded font-bold uppercase transition-all bg-roman-red text-white shadow">
+                        <i class="fa-solid fa-desktop mr-1"></i> Проектор
+                    </button>
+                    <button id="nav-btn-editor" onclick="switchMode('editor')" class="px-3 py-1.5 rounded font-bold uppercase transition-all text-roman-lightGold hover:text-white">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Редактор
+                    </button>
+                    <button id="nav-btn-voter" onclick="switchMode('voter')" class="px-3 py-1.5 rounded font-bold uppercase transition-all text-roman-lightGold hover:text-white">
+                        <i class="fa-solid fa-mobile-screen mr-1"></i> Зритель
+                    </button>
+                </div>
+
+                <button onclick="toggleQRModal()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase flex items-center shadow transition hover:scale-105">
+                    <i class="fa-solid fa-qrcode text-base mr-1.5"></i> QR-код
                 </button>
-                <button onclick="exportJson()" class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all" title="Сохранить JSON">
-                    💾 Сохранить
-                </button>
-                <label class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all cursor-pointer">
-                    📂 Загрузить
-                    <input type="file" accept=".json" class="hidden" onchange="importJson(event)">
-                </label>
             </div>
         </div>
     </header>
 
-    <!-- Основной блок -->
-    <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
-        
-        <!-- РЕЖИМ ПРЕЗЕНТАТОРА -->
-        <section id="view-presenter" class="space-y-6">
-            <div class="bg-red-900/40 border-2 border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-lg relative overflow-hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <span id="pres-slide-badge" class="px-4 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold uppercase tracking-wider font-roman">
-                        Слайд 1 из 2
-                    </span>
-                    <div id="pres-timer-box" class="hidden items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-4 py-1.5 rounded-full text-xs font-bold">
-                        ⏱️ Голосование: <span id="pres-timer-val">15</span>с
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+        <!-- PRESENTATION MODE -->
+        <section id="presentation-view" class="space-y-6">
+            <div class="roman-card rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-4 w-full md:w-auto">
+                    <div class="w-12 h-12 rounded-full border-2 border-roman-gold bg-roman-darkRed flex items-center justify-center font-cinzel text-xl font-bold text-roman-gold shadow-lg flex-shrink-0" id="step-number-badge">
+                        I
+                    </div>
+                    <div>
+                        <span class="text-xs text-roman-gold uppercase tracking-widest block" id="chapter-era">Эпоха</span>
+                        <h2 class="font-cinzel text-lg sm:text-xl text-white font-bold" id="chapter-title">Заголовок Слайда</h2>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    <div class="space-y-4">
-                        <h2 id="pres-title" class="text-2xl md:text-4xl font-bold text-amber-300 font-roman"></h2>
-                        <p id="pres-content" class="text-amber-100/90 text-base md:text-lg leading-relaxed"></p>
-                        <div id="pres-options-container" class="space-y-3 pt-4"></div>
+                <div id="stepper-dots-container" class="flex items-center space-x-2 overflow-x-auto max-w-full py-1"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 roman-card rounded-xl p-6 sm:p-8 border-t-4 border-t-roman-gold flex flex-col justify-between relative overflow-hidden shadow-2xl fade-in-slide" id="narrative-card">
+                    <div>
+                        <div class="roman-image-frame mb-6 h-48 sm:h-64 w-full">
+                            <img id="chapter-image" src="" alt="Иллюстрация слайда" class="w-full h-full object-cover">
+                            <div class="roman-image-overlay absolute inset-0 flex flex-col justify-end p-4">
+                                <span id="chapter-image-caption" class="text-xs text-roman-lightGold font-cinzel tracking-wider uppercase drop-shadow border-l-2 border-roman-gold pl-2">
+                                    Подпись к изображению
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-start mb-4">
+                            <span id="slide-type-tag" class="inline-block bg-roman-red/40 border border-roman-red text-roman-lightGold text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold">
+                                <i class="fa-solid fa-code-branch mr-1"></i> Слайд с развилкой
+                            </span>
+                            <span id="cato-age" class="text-xs text-roman-gold font-cinzel">Контекст</span>
+                        </div>
+
+                        <p id="story-text" class="text-lg sm:text-xl text-roman-parchment leading-relaxed mb-6 font-serif">
+                            Текст повествования...
+                        </p>
                     </div>
-                    
-                    <div class="flex justify-center">
-                        <img id="pres-image" src="" alt="Иллюстрация" class="max-h-80 w-full object-cover rounded-2xl shadow-2xl border-2 border-amber-500/40 hidden">
+
+                    <div id="question-prompt-box" class="bg-roman-darkRed/60 border-l-4 border-roman-gold p-4 rounded-r-lg mt-4">
+                        <h3 class="font-cinzel text-roman-gold font-bold text-base sm:text-lg mb-1">
+                            <i class="fa-solid fa-compass mr-2"></i> Решение зала:
+                        </h3>
+                        <p id="question-text" class="text-sm sm:text-base text-gray-200">
+                            Вопрос для голосования...
+                        </p>
                     </div>
                 </div>
 
-                <!-- Блок Fast-Fail развилки -->
-                <div id="pres-fastfail-box" class="mt-6 p-6 bg-red-950/80 border-2 border-amber-500/60 rounded-2xl hidden">
-                    <div class="flex items-center gap-2 text-amber-400 font-bold text-lg mb-3 font-roman">
-                        ⚠️ Исторический тупик (Fast-Fail)
+                <div class="roman-card rounded-xl p-6 flex flex-col justify-between border-t-4 border-t-roman-red shadow-2xl">
+                    <div id="timer-box" class="text-center mb-4">
+                        <div class="text-xs uppercase text-roman-gold font-cinzel tracking-widest mb-1">Время на решение</div>
+                        <div id="timer-display" class="font-cinzel text-5xl font-black text-white tracking-wider my-2">
+                            00:<span id="timer-sec">25</span>
+                        </div>
+                        <div class="w-full bg-roman-stone h-3 rounded-full overflow-hidden border border-roman-gold/30 mt-2">
+                            <div id="timer-bar" class="timer-bar h-full bg-roman-gold w-full"></div>
+                        </div>
                     </div>
-                    <p id="pres-fastfail-text" class="text-amber-100 text-base mb-4"></p>
-                    <img id="pres-fastfail-image" src="" alt="Концовка" class="max-h-64 rounded-xl object-cover border border-amber-500/40 hidden mb-4">
-                    <button onclick="resetLecture()" class="bg-amber-500 hover:bg-amber-400 text-red-950 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm">
-                        🔄 Начать сначала
-                    </button>
+
+                    <div class="space-y-3 bg-roman-stone/90 p-4 rounded-lg border border-roman-gold/20">
+                        <div class="text-xs font-bold text-roman-gold uppercase tracking-wider text-center border-b border-roman-gold/20 pb-2">
+                            Управление лектора
+                        </div>
+                        
+                        <div id="presenter-choice-controls" class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="btn-start-timer" onclick="startTimer()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
+                                    <i class="fa-solid fa-play mr-1.5"></i> Старт
+                                </button>
+                                <button id="btn-pause-timer" onclick="pauseTimer()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
+                                    <i class="fa-solid fa-pause mr-1.5"></i> Пауза
+                                </button>
+                            </div>
+
+                            <button onclick="simulateAudienceVotes()" class="w-full bg-roman-darkRed hover:bg-roman-red border border-roman-gold/40 text-roman-lightGold font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
+                                <i class="fa-solid fa-users-rays mr-1.5 text-roman-gold"></i> Симуляция 35 голосов
+                            </button>
+
+                            <button id="btn-proceed-choice" onclick="evaluateVoteResult()" class="w-full bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold py-2.5 px-3 rounded text-xs flex items-center justify-center transition uppercase tracking-wider shadow">
+                                <i class="fa-solid fa-arrow-right mr-1.5"></i> Подвести итог и продолжить
+                            </button>
+                        </div>
+
+                        <div id="presenter-info-controls" class="hidden">
+                            <button onclick="nextSlideInfo()" class="w-full bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold py-3 px-3 rounded text-sm flex items-center justify-center transition uppercase tracking-wider shadow">
+                                Следующий слайд <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center text-xs text-gray-400 flex justify-between items-center px-2">
+                        <span><i class="fa-solid fa-users text-roman-gold mr-1"></i> Активных зрителей:</span>
+                        <span id="voter-count" class="font-bold text-roman-gold">35</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Управление слайдами -->
-            <div class="flex flex-wrap justify-between items-center bg-red-950/60 border border-amber-500/30 p-4 rounded-2xl gap-4 backdrop-blur-md">
-                <div class="flex items-center gap-3">
-                    <button onclick="prevSlide()" class="bg-red-900/60 hover:bg-red-800/80 text-amber-200 border border-amber-500/30 px-5 py-2.5 rounded-xl font-semibold transition-all">
-                        ← Назад
-                    </button>
-                    <button onclick="nextSlide()" class="bg-amber-500 hover:bg-amber-400 text-red-950 font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg">
-                        Вперед →
-                    </button>
+            <div id="choices-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="card-option-a" onclick="castVotePresenter('A')" class="roman-card rounded-xl p-6 cursor-pointer hover:border-roman-gold transition-all relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="w-10 h-10 rounded-full bg-roman-red border border-roman-gold text-roman-gold font-cinzel font-bold text-lg flex items-center justify-center shadow">A</span>
+                        <span id="percent-a" class="font-cinzel text-2xl font-bold text-roman-gold">0%</span>
+                    </div>
+                    <h4 id="title-option-a" class="font-cinzel text-lg font-bold text-white mb-2 group-hover:text-roman-gold transition">Вариант A</h4>
+                    <p id="desc-option-a" class="text-sm text-gray-300 font-serif leading-relaxed">Описание A</p>
+
+                    <div class="mt-4 pt-3 border-t border-roman-gold/20">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Голосов: <strong id="votes-a-count" class="text-white">0</strong></span>
+                        </div>
+                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden">
+                            <div id="bar-a" class="h-full bg-roman-gold transition-all duration-500 w-0"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="voting-controls" class="flex items-center gap-4">
-                    <button onclick="startTimer()" id="btn-start-timer" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm">
-                        ▶️ Запустить таймер (15с)
-                    </button>
+                <div id="card-option-b" onclick="castVotePresenter('B')" class="roman-card rounded-xl p-6 cursor-pointer hover:border-roman-gold transition-all relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="w-10 h-10 rounded-full bg-roman-stone border border-roman-gold text-roman-gold font-cinzel font-bold text-lg flex items-center justify-center shadow">B</span>
+                        <span id="percent-b" class="font-cinzel text-2xl font-bold text-roman-gold">0%</span>
+                    </div>
+                    <h4 id="title-option-b" class="font-cinzel text-lg font-bold text-white mb-2 group-hover:text-roman-gold transition">Вариант B</h4>
+                    <p id="desc-option-b" class="text-sm text-gray-300 font-serif leading-relaxed">Описание B</p>
+
+                    <div class="mt-4 pt-3 border-t border-roman-gold/20">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Голосов: <strong id="votes-b-count" class="text-white">0</strong></span>
+                        </div>
+                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden">
+                            <div id="bar-b" class="h-full bg-roman-red transition-all duration-500 w-0"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- РЕЖИМ РЕДАКТОРА -->
-        <section id="view-editor" class="space-y-6 hidden">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-amber-300 font-roman">Редактор сценария</h2>
-                <button onclick="addNewSlide()" class="bg-amber-500 hover:bg-amber-400 text-red-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
-                    + Добавить слайд
-                </button>
-            </div>
-            <div id="editor-slides-list" class="space-y-6"></div>
-        </section>
-
-        <!-- РЕЖИМ ЗРИТЕЛЯ -->
-        <section id="view-voter" class="space-y-6 max-w-md mx-auto py-4 hidden">
-            <div class="bg-red-900/50 border-2 border-amber-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-6 backdrop-blur-lg">
-                <div class="inline-flex p-4 bg-amber-500/20 text-amber-300 rounded-2xl border border-amber-500/40 text-2xl">
-                    🏛️
-                </div>
+        <!-- EDITOR MODE -->
+        <section id="editor-view" class="hidden space-y-6 fade-in-slide">
+            <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                    <h2 id="voter-title" class="text-xl font-bold text-amber-300 font-roman mb-2"></h2>
-                    <p id="voter-content" class="text-amber-100/90 text-sm leading-relaxed"></p>
+                    <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
+                    <p class="text-xs text-gray-300">Добавляйте слайды, меняйте тексты, варианты ответов и картинки</p>
                 </div>
-                <div id="voter-buttons-container" class="space-y-3 pt-2"></div>
-            </div>
-        </section>
-    </main>
 
-    <!-- Модальное окно QR-кода -->
-    <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-red-950 border-2 border-amber-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center">
-            <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-amber-300 font-roman">QR-код для зрителей</h3>
-                <button onclick="closeQrModal()" class="text-amber-200/60 hover:text-amber-100 text-xl font-bold">✕</button>
-            </div>
-            <p class="text-xs text-amber-200/70">Ссылка на пульт с добавленным <code class="text-amber-400 font-mono">?mode=voter</code>:</p>
-            <input type="text" id="qr-url-input" class="w-full bg-red-900/50 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400" oninput="updateQrCode()">
-            <div class="bg-white p-4 rounded-2xl inline-block shadow-2xl">
-                <div id="qrcode-render" class="w-44 h-44 flex items-center justify-center"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script>
-        let lectureData = {
-            title: "Жизнь Катона Старшего",
-            slides: [
-                {
-                    id: 1,
-                    title: "Начало пути: Юность в Тускуле",
-                    content: "Марк Порций Катон родился в 234 г. до н.э. в плебейской семье. С каких шагов он решил начать свою публичную карьеру в древнем Риме?",
-                    image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80",
-                    isVote: true,
-                    options: [
-                        { text: "Отправиться в армию и сразиться с Ганнибалом", nextSlide: 2, fastFail: false },
-                        { text: "Открыть школу эллинской философии", nextSlide: null, fastFail: true, failText: "Катон открыто презирал изнеженность греческой философии! Римский сенат высмеял этот шаг, и его политическая карьера закончилась, так и не начавшись.", failImage: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80" }
-                    ]
-                },
-                {
-                    id: 2,
-                    title: "Закалка в легионах",
-                    content: "Катон героически проявил себя в битве при Метавре. Его суровость и строгие ценности заслужили уважение солдат и сенаторов.",
-                    image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
-                    isVote: false,
-                    options: []
-                }
-            ]
-        };
-
-        let currentSlideIndex = 0;
-        let timerInterval = null;
-        let currentFastFail = null;
-
-        function initApp() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const mode = urlParams.get('mode');
-
-            if (mode === 'voter') {
-                const header = document.getElementById('app-header');
-                if (header) header.remove();
-                switchMode('voter');
-            } else {
-                const saved = localStorage.getItem('cato_lecture_data');
-                if (saved) {
-                    try { lectureData = JSON.parse(saved); } catch(e) {}
-                }
-                switchMode('presenter');
-            }
-
-            const qrInput = document.getElementById('qr-url-input');
-            if (qrInput && !qrInput.value) {
-                qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
-            }
-        }
-
-        function switchMode(mode) {
-            document.getElementById('view-presenter').classList.add('hidden');
-            document.getElementById('view-editor').classList.add('hidden');
-            document.getElementById('view-voter').classList.add('hidden');
-
-            ['presenter', 'editor', 'voter'].forEach(m => {
-                const btn = document.getElementById(`btn-mode-${m}`);
-                if (btn) {
-                    btn.className = m === mode 
-                        ? "px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-amber-500 text-red-950 shadow-md"
-                        : "px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100";
-                }
-            });
-
-            if (mode === 'presenter') {
-                document.getElementById('view-presenter').classList.remove('hidden');
-                renderPresenterSlide();
-            } else if (mode === 'editor') {
-                document.getElementById('view-editor').classList.remove('hidden');
-                renderEditor();
-            } else if (mode === 'voter') {
-                document.getElementById('view-voter').classList.remove('hidden');
-                renderVoterView();
-            }
-        }
-
-        function renderPresenterSlide() {
-            const slide = lectureData.slides[currentSlideIndex];
-            if (!slide) return;
-
-            document.getElementById('pres-slide-badge').innerText = `Слайд ${currentSlideIndex + 1} из ${lectureData.slides.length}`;
-            document.getElementById('pres-title').innerText = slide.title;
-            document.getElementById('pres-content').innerText = slide.content;
-
-            const imgEl = document.getElementById('pres-image');
-            if (slide.image) {
-                imgEl.src = slide.image;
-                imgEl.classList.remove('hidden');
-            } else {
-                imgEl.classList.add('hidden');
-            }
-
-            const optContainer = document.getElementById('pres-options-container');
-            const votingControls = document.getElementById('voting-controls');
-            const fastFailBox = document.getElementById('pres-fastfail-box');
-
-            if (currentFastFail) {
-                optContainer.innerHTML = '';
-                votingControls.classList.add('hidden');
-                fastFailBox.classList.remove('hidden');
-                document.getElementById('pres-fastfail-text').innerText = currentFastFail.text;
-                
-                const ffImg = document.getElementById('pres-fastfail-image');
-                if (currentFastFail.image) {
-                    ffImg.src = currentFastFail.image;
-                    ffImg.classList.remove('hidden');
-                } else {
-                    ffImg.classList.add('hidden');
-                }
-            } else {
-                fastFailBox.classList.add('hidden');
-                if (slide.isVote) {
-                    votingControls.classList.remove('hidden');
-                    optContainer.innerHTML = slide.options.map((opt, idx) => `
-                        <div class="bg-red-950/60 border border-amber-500/40 p-3.5 rounded-xl flex justify-between items-center">
-                            <span class="text-sm text-amber-100"><strong class="text-amber-400 mr-2">[Вариант ${idx+1}]</strong> ${opt.text}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    votingControls.classList.add('hidden');
-                    optContainer.innerHTML = '';
-                }
-            }
-        }
-
-        function nextSlide() {
-            if (currentSlideIndex < lectureData.slides.length - 1) {
-                currentSlideIndex++;
-                currentFastFail = null;
-                renderPresenterSlide();
-            }
-        }
-
-        function prevSlide() {
-            if (currentSlideIndex > 0) {
-                currentSlideIndex--;
-                currentFastFail = null;
-                renderPresenterSlide();
-            }
-        }
-
-        function resetLecture() {
-            currentSlideIndex = 0;
-            currentFastFail = null;
-            renderPresenterSlide();
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            let timeLeft = 15;
-            const timerBox = document.getElementById('pres-timer-box');
-            const timerVal = document.getElementById('pres-timer-val');
-            timerBox.classList.remove('hidden');
-            timerBox.classList.add('flex');
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerVal.innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    timerBox.classList.add('hidden');
-                }
-            }, 1000);
-        }
-
-        function renderVoterView() {
-            const slide = lectureData.slides[currentSlideIndex];
-            if (!slide) return;
-
-            document.getElementById('voter-title').innerText = slide.title;
-            document.getElementById('voter-content').innerText = slide.content;
-
-            const btnContainer = document.getElementById('voter-buttons-container');
-            if (slide.isVote) {
-                btnContainer.innerHTML = slide.options.map((opt, idx) => `
-                    <button onclick="castVote(${idx})" class="w-full bg-amber-500 hover:bg-amber-400 text-red-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg text-sm">
-                        Вариант ${idx + 1}: ${opt.text}
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase flex items-center shadow transition">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Добавить слайд
                     </button>
-                `).join('');
-            } else {
-                btnContainer.innerHTML = `<div class="text-sm text-amber-200/60 py-4">Слушаем лектора...</div>`;
-            }
-        }
+                    <button onclick="exportScenarioJSON()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-4 py-2 rounded text-xs uppercase flex items-center shadow transition">
+                        <i class="fa-solid fa-download mr-1.5"></i> Экспорт JSON
+                    </button>
+                    <label class="bg-roman-stone hover:bg-roman-darkRed border border-roman-gold/50 text-roman-lightGold font-bold px-4 py-2 rounded text-xs uppercase cursor-pointer flex items-center transition">
+                        <i class="fa-solid fa-upload mr-1.5"></i> Импорт JSON
+                        <input type="file" id="import-json-file" accept=".json" onchange="importScenarioJSON(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
 
-        function castVote(optionIndex) {
-            const slide = lectureData.slides[currentSlideIndex];
-            const opt = slide.options[optionIndex];
-            if (opt && opt.fastFail) {
-                currentFastFail = { text: opt.failText, image: opt.failImage };
-            } else if (opt && opt.nextSlide) {
-                const targetIdx = lectureData.slides.findIndex(s => s.id === opt.nextSlide);
-                if (targetIdx !== -1) currentSlideIndex = targetIdx;
-            }
-            alert('Голос принят!');
-        }
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="roman-card rounded-xl p-4 border-t-2 border-t-roman-gold max-h-[700px] overflow-y-auto space-y-3">
+                    <div class="text-xs font-cinzel text-roman-gold uppercase tracking-widest border-b border-roman-gold/20 pb-2">
+                        Список слайдов (<span id="editor-slides-count">0</span>)
+                    </div>
+                    <div id="editor-slides-list" class="space-y-2"></div>
+                </div>
 
-        function renderEditor() {
-            const container = document.getElementById('editor-slides-list');
-            container.innerHTML = lectureData.slides.map((slide, sIdx) => `
-                <div class="bg-red-950/60 border border-amber-500/30 rounded-2xl p-5 space-y-4 shadow-xl">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider font-roman">Слайд #${slide.id}</span>
-                        <button onclick="deleteSlide(${sIdx})" class="text-red-400 hover:text-red-300 text-sm font-bold">Удалить</button>
+                <div id="editor-form-card" class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold space-y-6">
+                    <div class="flex justify-between items-center border-b border-roman-gold/30 pb-3">
+                        <h3 class="font-cinzel text-lg text-white font-bold" id="editor-form-header">Редактирование слайда #1</h3>
+                        <button onclick="deleteCurrentSlide()" class="text-xs bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 px-3 py-1.5 rounded">
+                            <i class="fa-solid fa-trash mr-1"></i> Удалить слайд
+                        </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-amber-200/70 mb-1">Заголовок слайда</label>
-                            <input type="text" value="${slide.title}" onchange="updateSlideField(${sIdx}, 'title', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Тип слайда:</label>
+                            <select id="edit-slide-type" onchange="toggleEditorTypeFields()" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
+                                <option value="choice">Слайд с развилкой (Голосование)</option>
+                                <option value="info">Информационный (Без выбора)</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-amber-200/70 mb-1">URL картинки</label>
-                            <input type="text" value="${slide.image || ''}" onchange="updateSlideField(${sIdx}, 'image', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Эпоха / Возраст:</label>
+                            <input type="text" id="edit-slide-era" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Таймер (сек):</label>
+                            <input type="number" id="edit-slide-timer" min="5" max="120" value="25" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-amber-200/70 mb-1">Текст слайда</label>
-                        <textarea rows="3" onchange="updateSlideField(${sIdx}, 'content', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">${slide.content}</textarea>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Заголовок слайда:</label>
+                        <input type="text" id="edit-slide-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white font-bold">
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" ${slide.isVote ? 'checked' : ''} onchange="toggleSlideVote(${sIdx}, this.checked)" id="vote-${sIdx}">
-                        <label for="vote-${sIdx}" class="text-sm text-amber-200 cursor-pointer">Включить голосование</label>
-                    </div>
-
-                    ${slide.isVote ? `
-                        <div class="space-y-3 pt-2 border-t border-amber-500/20">
-                            ${slide.options.map((opt, oIdx) => `
-                                <div class="bg-red-900/30 p-3 rounded-xl border border-amber-500/20 space-y-2">
-                                    <input type="text" value="${opt.text}" onchange="updateOptionText(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1.5 text-sm text-amber-100" placeholder="Вариант ответа">
-                                    <label class="flex items-center gap-2 text-xs text-amber-400">
-                                        <input type="checkbox" ${opt.fastFail ? 'checked' : ''} onchange="toggleFastFail(${sIdx}, ${oIdx}, this.checked)"> Fast-Fail развилка
-                                    </label>
-                                    ${opt.fastFail ? `
-                                        <input type="text" value="${opt.failText || ''}" onchange="updateFailText(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1 text-xs text-amber-100" placeholder="Текст тупиковой концовки">
-                                        <input type="text" value="${opt.failImage || ''}" onchange="updateFailImage(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1 text-xs text-amber-100" placeholder="URL картинки концовки">
-                                    ` : ''}
-                                </div>
-                            `).join('')}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-roman-stone/60 p-4 rounded-lg border border-roman-gold/20">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Изображения:</label>
+                                <input type="text" id="edit-slide-image" onchange="previewEditorImage()" placeholder="https://..." class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
+                                <input type="file" accept="image/*" onchange="handleLocalImageUpload(event)" class="text-xs text-gray-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Подпись к картинке:</label>
+                                <input type="text" id="edit-slide-caption" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                            </div>
                         </div>
-                    ` : ''}
+
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Предпросмотр картинки:</label>
+                            <div class="h-32 rounded border border-roman-gold/30 overflow-hidden bg-black/40 flex items-center justify-center">
+                                <img id="editor-img-preview" src="" alt="Preview" class="max-h-full max-w-full object-cover">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Текст истории / Лекции:</label>
+                        <textarea id="edit-slide-text" rows="4" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white font-serif"></textarea>
+                    </div>
+
+                    <div id="editor-choice-fields" class="space-y-4 pt-4 border-t border-roman-gold/30">
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Вопрос для голосования:</label>
+                            <input type="text" id="edit-slide-question" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-roman-stone/80 p-4 rounded-lg border border-emerald-900/60 space-y-2">
+                                <div class="text-xs font-bold text-emerald-400 uppercase">Вариант A (Главный путь)</div>
+                                <input type="text" id="edit-opt-a-title" placeholder="Заголовок A" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                <textarea id="edit-opt-a-desc" rows="2" placeholder="Описание A" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white"></textarea>
+                            </div>
+
+                            <div class="bg-roman-stone/80 p-4 rounded-lg border border-red-900/60 space-y-3">
+                                <div class="text-xs font-bold text-red-400 uppercase">Вариант B (Альтернативный исход / Фейл)</div>
+                                <input type="text" id="edit-opt-b-title" placeholder="Заголовок B" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                <textarea id="edit-opt-b-desc" rows="2" placeholder="Описание B" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white"></textarea>
+                                
+                                <div class="pt-2 border-t border-red-900/40 space-y-2">
+                                    <label class="block text-[10px] text-red-300 font-bold uppercase">Заголовок экрана поражения (Game Over):</label>
+                                    <input type="text" id="edit-fail-title" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                                    
+                                    <label class="block text-[10px] text-red-300 font-bold uppercase">Описание поражения / развязки:</label>
+                                    <textarea id="edit-fail-desc" rows="2" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
+
+                                    <!-- ПОЛЕ КАРТИНКИ FAST-FAIL -->
+                                    <label class="block text-[10px] text-red-300 font-bold uppercase">URL картинки экрана поражения (Fast-Fail):</label>
+                                    <input type="text" id="edit-fail-image" onchange="previewFailImage()" placeholder="https://..." class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                                    <input type="file" accept="image/*" onchange="handleFailImageUpload(event)" class="text-[10px] text-gray-400 mt-1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-roman-gold/30 text-right">
+                        <button onclick="saveCurrentSlideChanges()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold px-6 py-2.5 rounded text-sm uppercase tracking-wider shadow transition">
+                            <i class="fa-solid fa-floppy-disk mr-1.5"></i> Сохранить изменения слайда
+                        </button>
+                    </div>
                 </div>
-            `).join('');
-        }
+            </div>
+        </section>
 
-        function updateSlideField(idx, field, val) { lectureData.slides[idx][field] = val; saveToLocal(); }
-        function toggleSlideVote(idx, val) {
-            lectureData.slides[idx].isVote = val;
-            if (val && !lectureData.slides[idx].options.length) {
-                lectureData.slides[idx].options = [
-                    { text: "Вариант 1", nextSlide: null, fastFail: false },
-                    { text: "Вариант 2", nextSlide: null, fastFail: false }
-                ];
-            }
-            saveToLocal(); renderEditor();
-        }
-        function updateOptionText(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].text = val; saveToLocal(); }
-        function toggleFastFail(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].fastFail = val; saveToLocal(); renderEditor(); }
-        function updateFailText(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].failText = val; saveToLocal(); }
-        function updateFailImage(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].failImage = val; saveToLocal(); }
-        
-        function addNewSlide() {
-            const newId = lectureData.slides.length ? Math.max(...lectureData.slides.map(s => s.id)) + 1 : 1;
-            lectureData.slides.push({ id: newId, title: "Новый слайд", content: "Описание...", image: "", isVote: false, options: [] });
-            saveToLocal(); renderEditor();
-        }
-        function deleteSlide(idx) {
-            if (lectureData.slides.length <= 1) return alert('Нужен минимум 1 слайд');
-            lectureData.slides.splice(idx, 1); saveToLocal(); renderEditor();
-        }
-        function saveToLocal() { localStorage.setItem('cato_lecture_data', JSON.stringify(lectureData)); }
+        <!-- GAME OVER / FAIL SCREEN -->
+        <section id="gameover-view" class="hidden space-y-6 max-w-4xl mx-auto my-auto text-center fade-in-slide">
+            <div class="roman-card rounded-2xl p-6 sm:p-10 border-4 border-roman-red shadow-2xl relative overflow-hidden">
+                <div class="roman-image-frame mb-6 h-44 sm:h-56 w-full max-w-2xl mx-auto">
+                    <img id="fail-image" src="" alt="Развязка" class="w-full h-full object-cover">
+                    <div class="roman-image-overlay absolute inset-0 flex items-end justify-center pb-3">
+                        <span id="fail-image-caption" class="text-xs text-red-200 font-cinzel tracking-widest uppercase border-b border-roman-gold pb-0.5">
+                            Альтернативная концовка
+                        </span>
+                    </div>
+                </div>
 
-        function exportJson() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lectureData, null, 2));
-            const a = document.createElement('a'); a.href = dataStr; a.download = "cato_lecture.json"; document.body.appendChild(a); a.click(); a.remove();
-        }
-        function importJson(e) {
-            const reader = new FileReader();
-            if (e.target.files[0]) {
-                reader.readAsText(e.target.files[0], "UTF-8");
-                reader.onload = (evt) => {
-                    try { lectureData = JSON.parse(evt.target.result); saveToLocal(); renderEditor(); alert('Загружено!'); } catch (err) { alert('Ошибка JSON'); }
-                };
-            }
-        }
+                <div class="w-14 h-14 rounded-full bg-roman-darkRed border-2 border-roman-gold flex items-center justify-center mx-auto mb-3 shadow-xl">
+                    <i class="fa-solid fa-skull-crossbones text-xl text-roman-gold"></i>
+                </div>
 
-        function openQrModal() { document.getElementById('qr-modal').classList.remove('hidden'); updateQrCode(); }
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
-        function updateQrCode() {
-            const url = document.getElementById('qr-url-input').value;
-            const container = document.getElementById('qrcode-render');
-            container.innerHTML = '';
-            if (typeof QRCode !== 'undefined' && url) {
-                new QRCode(container, { text: url, width: 175, height: 175, colorDark: "#450a0a", colorLight: "#ffffff" });
-            }
-        }
+                <h2 id="fail-title" class="font-cinzel text-2xl sm:text-3xl font-black gold-gradient-text my-3">
+                    Альтернативный исход
+                </h2>
 
-        // Прямой выпуск запуска без внешних задержек
-        window.onload = initApp;
-    </script>
-</body>
-</html>
+                <p id="fail-desc" class="text-base text-roman-parchment leading-relaxed mb-6 max
