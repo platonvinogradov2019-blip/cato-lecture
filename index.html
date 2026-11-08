@@ -219,7 +219,7 @@
             <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
                     <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
-                    <p class="text-xs text-gray-300">Изменения мгновенно синхронизируются со всеми зрителями</p>
+                    <p class="text-xs text-gray-300">Изменяйте порядок, картинки (включая GIF) и контент</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
@@ -236,6 +236,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Список слайдов с кнопками перемещения -->
                 <div class="roman-card rounded-xl p-4 max-h-[600px] overflow-y-auto space-y-2">
                     <div class="text-xs font-cinzel text-roman-gold uppercase pb-2 border-b border-roman-gold/20">Список слайдов</div>
                     <div id="editor-list" class="space-y-2"></div>
@@ -275,11 +276,11 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки:</label>
-                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://...">
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки или GIF:</label>
+                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://... или ссылка на .gif">
                         </div>
                         <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл / GIF с ПК:</label>
                             <input type="file" accept="image/*" onchange="uploadEditorImage(event)" class="text-xs text-gray-300 mt-1">
                         </div>
                     </div>
@@ -309,10 +310,9 @@
                                 <input type="text" id="edit-fail-title" placeholder="Заголовок экрана поражения" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
                                 <textarea id="edit-fail-desc" rows="2" placeholder="Текст тупиковой концовки" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
                                 
-                                <!-- Загрузка картинки для плохой концовки -->
                                 <div>
-                                    <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка тупика (URL или файл):</label>
-                                    <input type="text" id="edit-fail-image" placeholder="https://..." class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
+                                    <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка / GIF тупика:</label>
+                                    <input type="text" id="edit-fail-image" placeholder="URL или .gif" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
                                     <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
                                 </div>
                             </div>
@@ -412,7 +412,7 @@
                 switchMode('presentation');
             }
 
-            // Синхронизация слайдов из Firebase
+            // Оптимизированная синхронизация слайдов из Firebase
             db.ref('slides').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -422,11 +422,15 @@
                     slides = defaultSlides;
                 }
                 if (isVoter) renderVoter();
-                else renderPresentation();
+                else {
+                    renderPresentation();
+                    if (document.getElementById('editor-view').classList.contains('hidden') === false) {
+                        renderEditor();
+                    }
+                }
             });
 
             if (isVoter) {
-                // Слушаем смену слайда или статус тупика
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null) {
@@ -515,15 +519,36 @@
             }
         }
 
-        // --- РЕДАКТОР ---
+        // --- РЕДАКТОР С ВОЗМОЖНОСТЬЮ ПЕРЕМЕЩЕНИЯ СЛАЙДОВ ---
         function renderEditor() {
             const listEl = document.getElementById('editor-list');
             listEl.innerHTML = slides.map((s, idx) => `
-                <div onclick="selectSlide(${idx})" class="p-2 rounded cursor-pointer text-xs transition ${idx === editingIdx ? 'bg-roman-red text-white font-bold' : 'bg-roman-stone/60 text-gray-300 hover:bg-roman-stone'}">
-                    #${idx + 1} [${s.type || 'choice'}]: ${s.title}
+                <div class="p-2 rounded cursor-pointer text-xs transition flex justify-between items-center ${idx === editingIdx ? 'bg-roman-red text-white font-bold' : 'bg-roman-stone/60 text-gray-300 hover:bg-roman-stone'}">
+                    <span onclick="selectSlide(${idx})" class="truncate flex-grow">#${idx + 1} [${s.type || 'choice'}]: ${s.title}</span>
+                    <div class="flex gap-1 ml-2 flex-shrink-0">
+                        <button onclick="event.stopPropagation(); moveSlide(${idx}, -1)" class="px-1.5 py-0.5 text-[10px] bg-black/40 hover:bg-black rounded text-roman-gold" ${idx === 0 ? 'disabled opacity-30' : ''}>▲</button>
+                        <button onclick="event.stopPropagation(); moveSlide(${idx}, 1)" class="px-1.5 py-0.5 text-[10px] bg-black/40 hover:bg-black rounded text-roman-gold" ${idx === slides.length - 1 ? 'disabled opacity-30' : ''}>▼</button>
+                    </div>
                 </div>
             `).join('');
             loadSlideToForm(editingIdx);
+        }
+
+        function moveSlide(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= slides.length) return;
+            
+            // Меняем местами элементы в массиве
+            const temp = slides[index];
+            slides[index] = slides[newIndex];
+            slides[newIndex] = temp;
+
+            // Корректируем индекс текущего редактируемого слайда
+            if (editingIdx === index) editingIdx = newIndex;
+            else if (editingIdx === newIndex) editingIdx = index;
+
+            db.ref('slides').set(slides);
+            renderEditor();
         }
 
         function selectSlide(idx) {
@@ -590,7 +615,7 @@
             slides[editingIdx] = s;
             db.ref('slides').set(slides);
             renderEditor();
-            alert('Слайд успешно сохранен и синхронизирован со зрителями!');
+            alert('Слайд сохранен и синхронизирован!');
         }
 
         function createNewSlide() {
@@ -651,14 +676,14 @@
                         db.ref('slides').set(slides);
                         editingIdx = 0;
                         renderEditor();
-                        alert('Сценарий успешно загружен в облако!');
+                        alert('Сценарий загружен в облако!');
                     } catch(err) { alert('Ошибка структуры JSON'); }
                 };
                 reader.readAsText(file);
             }
         }
 
-        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И ПЕРЕКЛЮЧЕНИЕМ ---
+        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И НАВИГАЦИЯ ---
         function addPresenterVote(type) {
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
         }
@@ -702,7 +727,6 @@
                 document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
                 document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
                 
-                // Переводим всех в статус тупика
                 db.ref('isGameOver').set(true);
                 switchMode('gameover');
             } else {
