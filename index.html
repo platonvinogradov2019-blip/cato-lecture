@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конструктор и Презентер Интерактивных Лекций-Квестов</title>
+    <title>Интерактивная лекция: Марк Порций Катон</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -12,8 +12,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700;900&family=Marcellus&display=swap" rel="stylesheet">
-    <!-- QR Code Generator JS library -->
+    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- FIREBASE SDK (Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
         tailwind.config = {
@@ -26,14 +30,11 @@
                             gold: '#D4AF37',
                             lightGold: '#F3E5AB',
                             parchment: '#F4EBE1',
-                            darkParchment: '#E8D8C3',
-                            stone: '#2B2825',
-                            accent: '#B8860B'
+                            stone: '#2B2825'
                         }
                     },
                     fontFamily: {
                         cinzel: ['Cinzel', 'serif'],
-                        cinzelDeco: ['Cinzel Decorative', 'serif'],
                         marcellus: ['Marcellus', 'serif']
                     }
                 }
@@ -45,408 +46,165 @@
             font-family: 'Marcellus', serif;
             background-color: #1A1715;
             color: #F4EBE1;
-            overflow-x: hidden;
         }
-
         .roman-card {
             background: linear-gradient(135deg, rgba(43,40,37,0.95) 0%, rgba(26,23,21,0.98) 100%);
             border: 2px solid #7A1C1C;
         }
-
-        .gold-gradient-text {
+        .gold-text {
             background: linear-gradient(180deg, #FFF099 0%, #D4AF37 50%, #997A15 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
-        .roman-image-frame {
-            position: relative;
+        .roman-frame {
             border: 2px solid #D4AF37;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.6);
-            overflow: hidden;
-            border-radius: 0.75rem;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
         }
-
-        .roman-image-frame img {
-            transition: transform 0.7s ease, filter 0.5s ease;
-            filter: contrast(1.05) sepia(0.2);
-        }
-
-        .roman-image-overlay {
-            background: linear-gradient(0deg, rgba(26,23,21,0.95) 0%, rgba(26,23,21,0.4) 50%, rgba(0,0,0,0) 100%);
-        }
-
-        .fade-in-slide {
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .timer-bar {
-            transition: width 1s linear, background-color 0.5s ease;
-        }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1A1715; }
-        ::-webkit-scrollbar-thumb {
-            background: #7A1C1C;
-            border-radius: 4px;
-            border: 1px solid #D4AF37;
-        }
+        .timer-bar { transition: width 1s linear; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-roman-red selection:text-roman-gold">
+<body class="min-h-screen flex flex-col justify-between">
 
-    <!-- TOP HEADER / NAVBAR -->
-    <header id="app-header" class="bg-roman-darkRed border-b-2 border-roman-gold p-4 shadow-xl relative z-20">
+    <!-- HEADER (Вырезается автоматически при ?mode=voter) -->
+    <header id="app-header" class="bg-roman-darkRed border-b-2 border-roman-gold p-4 shadow-xl">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-landmark text-roman-gold text-3xl"></i>
-                <div>
-                    <h1 class="font-cinzel text-xl sm:text-2xl font-bold tracking-wider gold-gradient-text uppercase" id="app-lecture-title">
-                        Марк Порций Катон
-                    </h1>
-                </div>
+                <i class="fa-solid fa-landmark text-roman-gold text-2xl"></i>
+                <h1 class="font-cinzel text-xl font-bold gold-text uppercase">Марк Порций Катон</h1>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div class="flex items-center gap-3">
                 <div class="bg-roman-stone border border-roman-gold/50 rounded-lg p-1 flex text-xs">
-                    <button id="nav-btn-presentation" onclick="switchMode('presentation')" class="px-3 py-1.5 rounded font-bold uppercase transition-all bg-roman-red text-white shadow">
-                        <i class="fa-solid fa-desktop mr-1"></i> Проектор
-                    </button>
-                    <button id="nav-btn-editor" onclick="switchMode('editor')" class="px-3 py-1.5 rounded font-bold uppercase transition-all text-roman-lightGold hover:text-white">
-                        <i class="fa-solid fa-pen-to-square mr-1"></i> Редактор
-                    </button>
-                    <button id="nav-btn-voter" onclick="switchMode('voter')" class="px-3 py-1.5 rounded font-bold uppercase transition-all text-roman-lightGold hover:text-white">
-                        <i class="fa-solid fa-mobile-screen mr-1"></i> Зритель
-                    </button>
+                    <button id="btn-mode-presentation" onclick="switchMode('presentation')" class="px-3 py-1.5 rounded font-bold uppercase bg-roman-red text-white">Проектор</button>
+                    <button id="btn-mode-editor" onclick="switchMode('editor')" class="px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold">Редактор</button>
+                    <button id="btn-mode-voter" onclick="switchMode('voter')" class="px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold">Зритель</button>
                 </div>
-
-                <button onclick="toggleQRModal()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase flex items-center shadow transition hover:scale-105">
-                    <i class="fa-solid fa-qrcode text-base mr-1.5"></i> QR-код
+                <button onclick="toggleQRModal()" class="bg-roman-gold text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase">
+                    <i class="fa-solid fa-qrcode mr-1"></i> QR-код
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT CONTAINER -->
+    <!-- MAIN CONTAINER -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- PRESENTATION MODE -->
+        <!-- PRESENTATION VIEW -->
         <section id="presentation-view" class="space-y-6">
-            <div class="roman-card rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center space-x-4 w-full md:w-auto">
-                    <div class="w-12 h-12 rounded-full border-2 border-roman-gold bg-roman-darkRed flex items-center justify-center font-cinzel text-xl font-bold text-roman-gold shadow-lg flex-shrink-0" id="step-number-badge">
-                        I
-                    </div>
+            <div class="roman-card rounded-xl p-4 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div id="step-badge" class="w-10 h-10 rounded-full border-2 border-roman-gold bg-roman-darkRed flex items-center justify-center font-cinzel font-bold text-roman-gold">I</div>
                     <div>
-                        <span class="text-xs text-roman-gold uppercase tracking-widest block" id="chapter-era">Эпоха</span>
-                        <h2 class="font-cinzel text-lg sm:text-xl text-white font-bold" id="chapter-title">Заголовок Слайда</h2>
+                        <span id="chapter-era" class="text-xs text-roman-gold uppercase block">Эпоха</span>
+                        <h2 id="chapter-title" class="font-cinzel text-lg text-white font-bold">...</h2>
                     </div>
                 </div>
-
-                <div id="stepper-dots-container" class="flex items-center space-x-2 overflow-x-auto max-w-full py-1"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 roman-card rounded-xl p-6 sm:p-8 border-t-4 border-t-roman-gold flex flex-col justify-between relative overflow-hidden shadow-2xl fade-in-slide" id="narrative-card">
+                <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
-                        <div class="roman-image-frame mb-6 h-48 sm:h-64 w-full">
-                            <img id="chapter-image" src="" alt="Иллюстрация слайда" class="w-full h-full object-cover">
-                            <div class="roman-image-overlay absolute inset-0 flex flex-col justify-end p-4">
-                                <span id="chapter-image-caption" class="text-xs text-roman-lightGold font-cinzel tracking-wider uppercase drop-shadow border-l-2 border-roman-gold pl-2">
-                                    Подпись к изображению
-                                </span>
-                            </div>
+                        <div class="roman-frame mb-4 h-56 w-full rounded-lg overflow-hidden">
+                            <img id="chapter-image" src="" class="w-full h-full object-cover">
                         </div>
-
-                        <div class="flex justify-between items-start mb-4">
-                            <span id="slide-type-tag" class="inline-block bg-roman-red/40 border border-roman-red text-roman-lightGold text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold">
-                                <i class="fa-solid fa-code-branch mr-1"></i> Слайд с развилкой
-                            </span>
-                        </div>
-
-                        <p id="story-text" class="text-lg sm:text-xl text-roman-parchment leading-relaxed mb-6 font-serif">
-                            Текст повествования...
-                        </p>
+                        <p id="story-text" class="text-lg text-roman-parchment leading-relaxed font-serif"></p>
                     </div>
 
-                    <div id="question-prompt-box" class="bg-roman-darkRed/60 border-l-4 border-roman-gold p-4 rounded-r-lg mt-4">
-                        <h3 class="font-cinzel text-roman-gold font-bold text-base sm:text-lg mb-1">
-                            <i class="fa-solid fa-compass mr-2"></i> Решение зала:
-                        </h3>
-                        <p id="question-text" class="text-sm sm:text-base text-gray-200">
-                            Вопрос для голосования...
-                        </p>
+                    <div id="question-box" class="bg-roman-darkRed/60 border-l-4 border-roman-gold p-4 rounded-r-lg mt-4">
+                        <h3 class="font-cinzel text-roman-gold font-bold text-base"><i class="fa-solid fa-compass mr-2"></i> Решение зала:</h3>
+                        <p id="question-text" class="text-sm text-gray-200 mt-1"></p>
                     </div>
                 </div>
 
-                <div class="roman-card rounded-xl p-6 flex flex-col justify-between border-t-4 border-t-roman-red shadow-2xl">
+                <!-- CONTROLS -->
+                <div class="roman-card rounded-xl p-6 flex flex-col justify-between border-t-4 border-t-roman-red">
                     <div id="timer-box" class="text-center mb-4">
-                        <div class="text-xs uppercase text-roman-gold font-cinzel tracking-widest mb-1">Время на решение</div>
-                        <div id="timer-display" class="font-cinzel text-5xl font-black text-white tracking-wider my-2">
-                            00:<span id="timer-sec">25</span>
-                        </div>
-                        <div class="w-full bg-roman-stone h-3 rounded-full overflow-hidden border border-roman-gold/30 mt-2">
+                        <div class="text-xs uppercase text-roman-gold font-cinzel">Время на решение</div>
+                        <div id="timer-display" class="font-cinzel text-4xl font-black text-white my-2">00:<span id="timer-sec">25</span></div>
+                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden border border-roman-gold/30">
                             <div id="timer-bar" class="timer-bar h-full bg-roman-gold w-full"></div>
                         </div>
                     </div>
 
                     <div class="space-y-3 bg-roman-stone/90 p-4 rounded-lg border border-roman-gold/20">
-                        <div class="text-xs font-bold text-roman-gold uppercase tracking-wider text-center border-b border-roman-gold/20 pb-2">
-                            Управление лектора
-                        </div>
-                        
-                        <div id="presenter-choice-controls" class="space-y-2">
-                            <div class="grid grid-cols-2 gap-2">
-                                <button id="btn-start-timer" onclick="startTimer()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
-                                    <i class="fa-solid fa-play mr-1.5"></i> Старт
-                                </button>
-                                <button id="btn-pause-timer" onclick="pauseTimer()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
-                                    <i class="fa-solid fa-pause mr-1.5"></i> Пауза
-                                </button>
-                            </div>
-
-                            <button onclick="simulateAudienceVotes()" class="w-full bg-roman-darkRed hover:bg-roman-red border border-roman-gold/40 text-roman-lightGold font-bold py-2 px-3 rounded text-xs flex items-center justify-center transition">
-                                <i class="fa-solid fa-users-rays mr-1.5 text-roman-gold"></i> Симуляция 35 голосов
+                        <div class="text-xs font-bold text-roman-gold uppercase text-center border-b border-roman-gold/20 pb-2">Управление ведущего</div>
+                        <div id="choice-controls" class="space-y-2">
+                            <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs">
+                                <i class="fa-solid fa-play mr-1"></i> Запустить таймер
                             </button>
-
-                            <button id="btn-proceed-choice" onclick="evaluateVoteResult()" class="w-full bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold py-2.5 px-3 rounded text-xs flex items-center justify-center transition uppercase tracking-wider shadow">
-                                <i class="fa-solid fa-arrow-right mr-1.5"></i> Подвести итог и продолжить
+                            <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2 px-3 rounded text-xs">
+                                <i class="fa-solid fa-users-rays mr-1"></i> Симулировать голоса зала
+                            </button>
+                            <button onclick="evaluateResult()" class="w-full bg-roman-gold text-roman-darkRed font-cinzel font-bold py-2.5 px-3 rounded text-xs uppercase">
+                                Подвести итог и далее →
                             </button>
                         </div>
-
-                        <div id="presenter-info-controls" class="hidden">
-                            <button onclick="nextSlideInfo()" class="w-full bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold py-3 px-3 rounded text-sm flex items-center justify-center transition uppercase tracking-wider shadow">
-                                Следующий слайд <i class="fa-solid fa-arrow-right ml-2"></i>
+                        <div id="info-controls" class="hidden">
+                            <button onclick="nextSlide()" class="w-full bg-roman-gold text-roman-darkRed font-cinzel font-bold py-3 px-3 rounded text-sm uppercase">
+                                Следующий слайд →
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- CHOICES -->
             <div id="choices-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div id="card-option-a" onclick="castVotePresenter('A')" class="roman-card rounded-xl p-6 cursor-pointer hover:border-roman-gold transition-all relative overflow-hidden group">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="w-10 h-10 rounded-full bg-roman-red border border-roman-gold text-roman-gold font-cinzel font-bold text-lg flex items-center justify-center shadow">A</span>
-                        <span id="percent-a" class="font-cinzel text-2xl font-bold text-roman-gold">0%</span>
+                <div class="roman-card rounded-xl p-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="w-8 h-8 rounded-full bg-roman-red text-roman-gold font-bold flex items-center justify-center">A</span>
+                        <span id="pct-a" class="font-cinzel text-xl font-bold text-roman-gold">0%</span>
                     </div>
-                    <h4 id="title-option-a" class="font-cinzel text-lg font-bold text-white mb-2 group-hover:text-roman-gold transition">Вариант A</h4>
-                    <p id="desc-option-a" class="text-sm text-gray-300 font-serif leading-relaxed">Описание A</p>
-
-                    <div class="mt-4 pt-3 border-t border-roman-gold/20">
-                        <div class="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Голосов: <strong id="votes-a-count" class="text-white">0</strong></span>
-                        </div>
-                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden">
-                            <div id="bar-a" class="h-full bg-roman-gold transition-all duration-500 w-0"></div>
-                        </div>
+                    <h4 id="title-a" class="font-cinzel text-lg font-bold text-white mb-1"></h4>
+                    <p id="desc-a" class="text-xs text-gray-300"></p>
+                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-3">
+                        <div id="bar-a" class="h-full bg-roman-gold transition-all w-0"></div>
                     </div>
                 </div>
 
-                <div id="card-option-b" onclick="castVotePresenter('B')" class="roman-card rounded-xl p-6 cursor-pointer hover:border-roman-gold transition-all relative overflow-hidden group">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="w-10 h-10 rounded-full bg-roman-stone border border-roman-gold text-roman-gold font-cinzel font-bold text-lg flex items-center justify-center shadow">B</span>
-                        <span id="percent-b" class="font-cinzel text-2xl font-bold text-roman-gold">0%</span>
+                <div class="roman-card rounded-xl p-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="w-8 h-8 rounded-full bg-roman-stone border border-roman-gold text-roman-gold font-bold flex items-center justify-center">B</span>
+                        <span id="pct-b" class="font-cinzel text-xl font-bold text-roman-gold">0%</span>
                     </div>
-                    <h4 id="title-option-b" class="font-cinzel text-lg font-bold text-white mb-2 group-hover:text-roman-gold transition">Вариант B</h4>
-                    <p id="desc-option-b" class="text-sm text-gray-300 font-serif leading-relaxed">Описание B</p>
-
-                    <div class="mt-4 pt-3 border-t border-roman-gold/20">
-                        <div class="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Голосов: <strong id="votes-b-count" class="text-white">0</strong></span>
-                        </div>
-                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden">
-                            <div id="bar-b" class="h-full bg-roman-red transition-all duration-500 w-0"></div>
-                        </div>
+                    <h4 id="title-b" class="font-cinzel text-lg font-bold text-white mb-1"></h4>
+                    <p id="desc-b" class="text-xs text-gray-300"></p>
+                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-3">
+                        <div id="bar-b" class="h-full bg-roman-red transition-all w-0"></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- EDITOR MODE -->
-        <section id="editor-view" class="hidden space-y-6 fade-in-slide">
-            <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
-                <div>
-                    <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
-                    <p class="text-xs text-gray-300">Добавляйте слайды, меняйте тексты, варианты ответов и картинки</p>
+        <!-- GAME OVER / FAST-FAIL -->
+        <section id="gameover-view" class="hidden max-w-3xl mx-auto text-center space-y-6">
+            <div class="roman-card rounded-2xl p-8 border-4 border-roman-red">
+                <div class="roman-frame mb-4 h-52 w-full rounded-xl overflow-hidden">
+                    <img id="fail-img" src="" class="w-full h-full object-cover">
                 </div>
-
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase flex items-center shadow transition">
-                        <i class="fa-solid fa-plus mr-1.5"></i> Добавить слайд
-                    </button>
-                    <button onclick="exportScenarioJSON()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-4 py-2 rounded text-xs uppercase flex items-center shadow transition">
-                        <i class="fa-solid fa-download mr-1.5"></i> Экспорт JSON
-                    </button>
-                    <label class="bg-roman-stone hover:bg-roman-darkRed border border-roman-gold/50 text-roman-lightGold font-bold px-4 py-2 rounded text-xs uppercase cursor-pointer flex items-center transition">
-                        <i class="fa-solid fa-upload mr-1.5"></i> Импорт JSON
-                        <input type="file" id="import-json-file" accept=".json" onchange="importScenarioJSON(event)" class="hidden">
-                    </label>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="roman-card rounded-xl p-4 border-t-2 border-t-roman-gold max-h-[700px] overflow-y-auto space-y-3">
-                    <div class="text-xs font-cinzel text-roman-gold uppercase tracking-widest border-b border-roman-gold/20 pb-2">
-                        Список слайдов (<span id="editor-slides-count">0</span>)
-                    </div>
-                    <div id="editor-slides-list" class="space-y-2"></div>
-                </div>
-
-                <div id="editor-form-card" class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold space-y-6">
-                    <div class="flex justify-between items-center border-b border-roman-gold/30 pb-3">
-                        <h3 class="font-cinzel text-lg text-white font-bold" id="editor-form-header">Редактирование слайда #1</h3>
-                        <button onclick="deleteCurrentSlide()" class="text-xs bg-red-950 text-red-300 border border-red-800 hover:bg-red-900 px-3 py-1.5 rounded">
-                            <i class="fa-solid fa-trash mr-1"></i> Удалить слайд
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Тип слайда:</label>
-                            <select id="edit-slide-type" onchange="toggleEditorTypeFields()" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
-                                <option value="choice">Слайд с развилкой (Голосование)</option>
-                                <option value="info">Информационный (Без выбора)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Эпоха / Возраст:</label>
-                            <input type="text" id="edit-slide-era" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Таймер (сек):</label>
-                            <input type="number" id="edit-slide-timer" min="5" max="120" value="25" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Заголовок слайда:</label>
-                        <input type="text" id="edit-slide-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white font-bold">
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-roman-stone/60 p-4 rounded-lg border border-roman-gold/20">
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Изображения:</label>
-                                <input type="text" id="edit-slide-image" onchange="previewEditorImage()" placeholder="https://..." class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
-                                <input type="file" accept="image/*" onchange="handleLocalImageUpload(event)" class="text-xs text-gray-300">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Подпись к картинке:</label>
-                                <input type="text" id="edit-slide-caption" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Предпросмотр картинки:</label>
-                            <div class="h-32 rounded border border-roman-gold/30 overflow-hidden bg-black/40 flex items-center justify-center">
-                                <img id="editor-img-preview" src="" alt="Preview" class="max-h-full max-w-full object-cover">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Текст истории / Лекции:</label>
-                        <textarea id="edit-slide-text" rows="4" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white font-serif"></textarea>
-                    </div>
-
-                    <div id="editor-choice-fields" class="space-y-4 pt-4 border-t border-roman-gold/30">
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Вопрос для голосования:</label>
-                            <input type="text" id="edit-slide-question" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-sm text-white">
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-roman-stone/80 p-4 rounded-lg border border-emerald-900/60 space-y-2">
-                                <div class="text-xs font-bold text-emerald-400 uppercase">Вариант A (Главный путь)</div>
-                                <input type="text" id="edit-opt-a-title" placeholder="Заголовок A" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
-                                <textarea id="edit-opt-a-desc" rows="2" placeholder="Описание A" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white"></textarea>
-                            </div>
-
-                            <div class="bg-roman-stone/80 p-4 rounded-lg border border-red-900/60 space-y-3">
-                                <div class="text-xs font-bold text-red-400 uppercase">Вариант B (Альтернативный исход / Фейл)</div>
-                                <input type="text" id="edit-opt-b-title" placeholder="Заголовок B" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
-                                <textarea id="edit-opt-b-desc" rows="2" placeholder="Описание B" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white"></textarea>
-                                
-                                <div class="pt-2 border-t border-red-900/40 space-y-2">
-                                    <label class="block text-[10px] text-red-300 font-bold uppercase">Заголовок экрана поражения (Game Over):</label>
-                                    <input type="text" id="edit-fail-title" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
-                                    
-                                    <label class="block text-[10px] text-red-300 font-bold uppercase">Описание поражения / развязки:</label>
-                                    <textarea id="edit-fail-desc" rows="2" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
-
-                                    <label class="block text-[10px] text-red-300 font-bold uppercase">URL картинки экрана поражения (Fast-Fail):</label>
-                                    <input type="text" id="edit-fail-image" placeholder="https://..." class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
-                                    <input type="file" accept="image/*" onchange="handleFailImageUpload(event)" class="text-[10px] text-gray-400 mt-1">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-roman-gold/30 text-right">
-                        <button onclick="saveCurrentSlideChanges()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold px-6 py-2.5 rounded text-sm uppercase tracking-wider shadow transition">
-                            <i class="fa-solid fa-floppy-disk mr-1.5"></i> Сохранить изменения слайда
-                        </button>
-                    </div>
-                </div>
+                <h2 id="fail-title" class="font-cinzel text-2xl font-black text-roman-gold mb-2"></h2>
+                <p id="fail-desc" class="text-base text-roman-parchment leading-relaxed mb-6 font-serif"></p>
+                <button onclick="restartLecture()" class="bg-roman-gold text-roman-darkRed font-cinzel font-bold px-6 py-3 rounded-lg text-sm uppercase">
+                    🔄 Начать с первого слайда
+                </button>
             </div>
         </section>
 
-        <!-- GAME OVER / FAIL SCREEN -->
-        <section id="gameover-view" class="hidden space-y-6 max-w-4xl mx-auto my-auto text-center fade-in-slide">
-            <div class="roman-card rounded-2xl p-6 sm:p-10 border-4 border-roman-red shadow-2xl relative overflow-hidden">
-                <div class="roman-image-frame mb-6 h-44 sm:h-56 w-full max-w-2xl mx-auto">
-                    <img id="fail-image" src="" alt="Развязка" class="w-full h-full object-cover">
-                    <div class="roman-image-overlay absolute inset-0 flex items-end justify-center pb-3">
-                        <span id="fail-image-caption" class="text-xs text-red-200 font-cinzel tracking-widest uppercase border-b border-roman-gold pb-0.5">
-                            Альтернативная концовка
-                        </span>
-                    </div>
-                </div>
-
-                <div class="w-14 h-14 rounded-full bg-roman-darkRed border-2 border-roman-gold flex items-center justify-center mx-auto mb-3 shadow-xl">
-                    <i class="fa-solid fa-skull-crossbones text-xl text-roman-gold"></i>
-                </div>
-
-                <h2 id="fail-title" class="font-cinzel text-2xl sm:text-3xl font-black gold-gradient-text my-3">
-                    Альтернативный исход
-                </h2>
-
-                <p id="fail-desc" class="text-base text-roman-parchment leading-relaxed mb-6 max-w-2xl mx-auto font-serif">
-                    Описание тупикового пути...
-                </p>
-
-                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4 border-t border-roman-gold/20">
-                    <button onclick="restoreCheckpoint()" class="w-full sm:w-auto bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-cinzel font-bold px-8 py-3.5 rounded-lg text-sm uppercase tracking-wider flex items-center justify-center shadow-lg transition hover:scale-105">
-                        <i class="fa-solid fa-rotate-left mr-2"></i> Вернуться к развилке
-                    </button>
-                    <button onclick="resetStory()" class="w-full sm:w-auto bg-roman-stone hover:bg-roman-darkRed text-gray-300 border border-roman-gold/40 font-cinzel font-bold px-6 py-3.5 rounded-lg text-xs uppercase tracking-wider transition">
-                        Начать с 1-го слайда
-                    </button>
-                </div>
+        <!-- VOTER VIEW -->
+        <section id="voter-view" class="hidden max-w-md mx-auto text-center space-y-6">
+            <div class="roman-card rounded-3xl p-6 border-4 border-roman-gold space-y-4">
+                <h2 id="voter-title" class="font-cinzel text-xl font-bold text-roman-gold">Пульт зрителя</h2>
+                <p id="voter-question" class="text-sm text-gray-300"></p>
+                <div id="voter-buttons" class="space-y-3"></div>
+                <div id="voter-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Ваш голос учтен!</div>
             </div>
         </section>
 
-        <!-- VOTER MODE -->
-        <section id="voter-view" class="hidden space-y-6 max-w-md mx-auto my-auto text-center fade-in-slide">
-            <div class="roman-card rounded-3xl p-6 shadow-2xl space-y-6 border-4 border-roman-gold">
-                <div class="w-16 h-16 rounded-full bg-roman-darkRed border-2 border-roman-gold flex items-center justify-center mx-auto shadow-xl">
-                    <i class="fa-solid fa-mobile-screen text-2xl text-roman-gold"></i>
-                </div>
-                <div>
-                    <h2 id="voter-slide-title" class="font-cinzel text-xl font-bold text-roman-gold mb-2">Пульт голосования</h2>
-                    <p id="voter-slide-question" class="text-sm text-gray-300 font-serif">Ожидание запуска вопроса...</p>
-                </div>
-
-                <div id="voter-buttons-box" class="space-y-4 pt-2"></div>
-                <div id="voter-msg-status" class="text-xs text-roman-gold font-bold hidden"></div>
+        <!-- EDITOR VIEW -->
+        <section id="editor-view" class="hidden space-y-6">
+            <div class="roman-card rounded-xl p-6 border-t-4 border-t-roman-gold">
+                <h2 class="font-cinzel text-xl font-bold text-roman-gold mb-4">Редактор сценария</h2>
+                <button onclick="exportJSON()" class="bg-roman-gold text-roman-darkRed font-bold px-4 py-2 rounded text-xs uppercase">Скачать JSON</button>
             </div>
         </section>
 
@@ -454,40 +212,42 @@
 
     <!-- QR MODAL -->
     <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-roman-darkRed border-2 border-roman-gold rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center">
+        <div class="bg-roman-darkRed border-2 border-roman-gold rounded-3xl p-6 max-w-md w-full text-center space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="font-cinzel text-lg font-bold text-roman-gold">QR-код для зрителей</h3>
-                <button onclick="toggleQRModal()" class="text-roman-lightGold hover:text-white text-xl">✕</button>
+                <button onclick="toggleQRModal()" class="text-white text-xl">✕</button>
             </div>
-            <p class="text-xs text-gray-300">Ссылка с автоматически включенным <code class="text-roman-gold font-mono">?mode=voter</code>:</p>
             <input type="text" id="qr-url-input" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" oninput="renderQR()">
-            <div class="bg-white p-4 rounded-2xl inline-block shadow-inner">
+            <div class="bg-white p-4 rounded-2xl inline-block">
                 <div id="qrcode-target" class="w-44 h-44 flex items-center justify-center"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let scenarioData = [
+        // Инициализация Firebase по вашей ссылке
+        const firebaseConfig = {
+            databaseURL: "https://cato-lecture-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const defaultData = [
             {
                 id: 1,
                 type: 'choice',
                 era: '234 – 217 гг. до н.э.',
                 title: 'Юность в Тускуле и выбор пути',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
-                imageCaption: 'Катон на имении в Сабинской земле',
-                storyText: 'Марк Порций родился в Тускуле в семье плебеев. Он унаследовал скромное сабинское имение и с юных лет работал на земле вместе со своими рабами. Однако начавшаяся Вторая Пуническая война требует решения.',
-                questionText: 'Какое направление выберет юный Катон для старта своей карьеры?',
+                storyText: 'Марк Порций родился в Тускуле в плебейской семье. Он унаследовал скромное сабинское имение и с юных лет работал на земле. Но начавшаяся Вторая Пуническая война требует решения.',
+                questionText: 'Какое направление выберет юный Катон?',
                 timer: 25,
-                optionA: {
-                    title: 'Военная служба против Ганнибала',
-                    desc: 'Отправиться в легионы, проявить себя в боях и завоевать уважение суровой дисциплиной.'
-                },
-                optionB: {
-                    title: 'Изучение греческой философии',
-                    desc: 'Поехать в Афины, овладеть искусством красноречия и увлечься эллинистической культурой.',
+                optionA: { title: 'Военная служба против Ганнибала', desc: 'Отправиться в легионы и проявить себя суровой дисциплиной.' },
+                optionB: { 
+                    title: 'Изучение греческой философии', 
+                    desc: 'Поехать в Афины и овладеть эллинистической культурой.',
                     failTitle: 'Провал: Пренебрежение Рима',
-                    failDesc: 'Катон увлекся греческой изнеженностью. В традиционном Риме того времени греческая философия считалась опасной и чуждой. Сенаторы высмеяли молодой умишко, и политическая карьера Катона закончилась, не начавшись.',
+                    failDesc: 'Катон увлекся греческой изнеженностью! В традиционном Риме философия считалась опасной чуждой страстью. Сенаторы высмеяли молодой умишко, и карьера Катона закончилась.',
                     failImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80'
                 }
             },
@@ -495,427 +255,191 @@
                 id: 2,
                 type: 'info',
                 era: '214 – 204 гг. до н.э.',
-                title: 'Закалка в боях и служба военным трибуном',
+                title: 'Закалка в легионах',
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
-                imageCaption: 'Римский легион на марше',
-                storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость привлекли внимание знатного знатока законов Луция Валерия Флакка.',
+                storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
                 timer: 0
             }
         ];
 
-        let currentSlideIdx = 0;
-        let activeTimer = null;
-        let timerSeconds = 25;
-        let editingSlideIdx = 0;
+        let slides = defaultData;
+        let currentIdx = 0;
         let votesA = 0;
         let votesB = 0;
-        let hasVotedCurrentSlide = false;
+        let timerInt = null;
+        let hasVoted = false;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const mode = urlParams.get('mode');
-
-            if (mode === 'voter') {
+            if (urlParams.get('mode') === 'voter') {
                 const header = document.getElementById('app-header');
                 if (header) header.remove();
                 switchMode('voter');
+                
+                // Слушаем смену слайдов в реальном времени от ведущего
+                db.ref('currentSlide').on('value', (snapshot) => {
+                    const newIdx = snapshot.val();
+                    if (newIdx !== null && newIdx !== currentIdx) {
+                        currentIdx = newIdx;
+                        hasVoted = false;
+                        renderVoter();
+                    }
+                });
+
             } else {
-                const saved = localStorage.getItem('cato_scenario_save');
-                if (saved) {
-                    try { scenarioData = JSON.parse(saved); } catch(e){}
-                }
                 switchMode('presentation');
+                
+                // Ведущий слушает поступающие голоса из облака в реальном времени
+                db.ref('votes').on('value', (snapshot) => {
+                    const data = snapshot.val() || { A: 0, B: 0 };
+                    votesA = data.A || 0;
+                    votesB = data.B || 0;
+                    updateBars();
+                });
             }
 
             const qrInput = document.getElementById('qr-url-input');
-            if (qrInput && !qrInput.value) {
-                qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
-            }
-
-            // Синхронизация между вкладками / устройствами
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'cato_current_slide') {
-                    currentSlideIdx = parseInt(e.newValue) || 0;
-                    hasVotedCurrentSlide = false;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('mode') === 'voter') renderVoter();
-                }
-                if (e.key === 'cato_votes_data') {
-                    const data = JSON.parse(e.newValue || '{}');
-                    if (data.slideIdx === currentSlideIdx) {
-                        votesA = data.votesA || 0;
-                        votesB = data.votesB || 0;
-                        updateVoteBars();
-                    }
-                }
-            });
+            if (qrInput) qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
         };
 
         function switchMode(mode) {
             ['presentation', 'editor', 'gameover', 'voter'].forEach(m => {
-                const sec = document.getElementById(`${m}-view`);
-                if (sec) sec.classList.add('hidden');
+                const el = document.getElementById(`${m}-view`);
+                if (el) el.classList.add('hidden');
             });
+            document.getElementById(`${mode}-view`).classList.remove('hidden');
 
-            ['presentation', 'editor', 'voter'].forEach(m => {
-                const btn = document.getElementById(`nav-btn-${m}`);
-                if (btn) {
-                    btn.className = (m === mode)
-                        ? "px-3 py-1.5 rounded font-bold uppercase transition-all bg-roman-red text-white shadow"
-                        : "px-3 py-1.5 rounded font-bold uppercase transition-all text-roman-lightGold hover:text-white";
-                }
-            });
-
-            if (mode === 'presentation') {
-                document.getElementById('presentation-view').classList.remove('hidden');
-                renderPresentation();
-            } else if (mode === 'editor') {
-                document.getElementById('editor-view').classList.remove('hidden');
-                renderEditor();
-            } else if (mode === 'voter') {
-                document.getElementById('voter-view').classList.remove('hidden');
-                renderVoter();
-            } else if (mode === 'gameover') {
-                document.getElementById('gameover-view').classList.remove('hidden');
-            }
+            if (mode === 'presentation') renderPresentation();
+            if (mode === 'voter') renderVoter();
         }
 
         function renderPresentation() {
-            const slide = scenarioData[currentSlideIdx];
+            const slide = slides[currentIdx];
             if (!slide) return;
 
-            // Передаем текущий слайд для всех зрителей
-            localStorage.setItem('cato_current_slide', currentSlideIdx);
+            // Передаем номер текущего слайда в облако
+            db.ref('currentSlide').set(currentIdx);
+            db.ref('votes').set({ A: 0, B: 0 }); // Сбрасываем голоса при смене слайда
 
-            document.getElementById('step-number-badge').innerText = (currentSlideIdx + 1);
-            document.getElementById('chapter-era').innerText = slide.era || 'История';
+            document.getElementById('step-badge').innerText = currentIdx + 1;
+            document.getElementById('chapter-era').innerText = slide.era || '';
             document.getElementById('chapter-title').innerText = slide.title;
             document.getElementById('story-text').innerText = slide.storyText;
-            document.getElementById('chapter-image').src = slide.image || '';
-            document.getElementById('chapter-image-caption').innerText = slide.imageCaption || '';
+            document.getElementById('chapter-image').src = slide.image;
 
             const isChoice = (slide.type === 'choice');
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
-            document.getElementById('question-prompt-box').style.display = isChoice ? 'block' : 'none';
+            document.getElementById('question-box').style.display = isChoice ? 'block' : 'none';
             document.getElementById('timer-box').style.display = isChoice ? 'block' : 'none';
-            document.getElementById('presenter-choice-controls').style.display = isChoice ? 'block' : 'none';
-            document.getElementById('presenter-info-controls').style.display = isChoice ? 'none' : 'block';
+            document.getElementById('choice-controls').style.display = isChoice ? 'block' : 'none';
+            document.getElementById('info-controls').style.display = isChoice ? 'none' : 'block';
 
             if (isChoice) {
-                document.getElementById('question-text').innerText = slide.questionText || '';
-                document.getElementById('title-option-a').innerText = slide.optionA?.title || '';
-                document.getElementById('desc-option-a').innerText = slide.optionA?.desc || '';
-                document.getElementById('title-option-b').innerText = slide.optionB?.title || '';
-                document.getElementById('desc-option-b').innerText = slide.optionB?.desc || '';
-                resetVotes();
-                timerSeconds = slide.timer || 25;
-                document.getElementById('timer-sec').innerText = timerSeconds;
-            }
-
-            renderStepperDots();
-        }
-
-        function renderStepperDots() {
-            const container = document.getElementById('stepper-dots-container');
-            container.innerHTML = scenarioData.map((s, idx) => `
-                <div onclick="jumpToSlide(${idx})" class="w-3 h-3 rounded-full cursor-pointer transition-all ${idx === currentSlideIdx ? 'bg-roman-gold scale-125' : 'bg-roman-stone border border-roman-gold/40'}"></div>
-            `).join('');
-        }
-
-        function jumpToSlide(idx) {
-            currentSlideIdx = idx;
-            renderPresentation();
-        }
-
-        function nextSlideInfo() {
-            if (currentSlideIdx < scenarioData.length - 1) {
-                currentSlideIdx++;
-                renderPresentation();
+                document.getElementById('question-text').innerText = slide.questionText;
+                document.getElementById('title-a').innerText = slide.optionA.title;
+                document.getElementById('desc-a').innerText = slide.optionA.desc;
+                document.getElementById('title-b').innerText = slide.optionB.title;
+                document.getElementById('desc-b').innerText = slide.optionB.desc;
             }
         }
 
-        function startTimer() {
-            clearInterval(activeTimer);
-            const total = scenarioData[currentSlideIdx].timer || 25;
-            activeTimer = setInterval(() => {
-                timerSeconds--;
-                document.getElementById('timer-sec').innerText = timerSeconds;
-                const pct = (timerSeconds / total) * 100;
-                document.getElementById('timer-bar').style.width = `${pct}%`;
-                if (timerSeconds <= 0) {
-                    clearInterval(activeTimer);
-                    evaluateVoteResult();
-                }
-            }, 1000);
-        }
-
-        function pauseTimer() { clearInterval(activeTimer); }
-
-        function castVotePresenter(type) {
-            if (type === 'A') votesA++;
-            if (type === 'B') votesB++;
-            syncVotesToStorage();
-            updateVoteBars();
-        }
-
-        function simulateAudienceVotes() {
-            votesA = Math.floor(Math.random() * 25) + 10;
-            votesB = Math.floor(Math.random() * 10);
-            syncVotesToStorage();
-            updateVoteBars();
-        }
-
-        function resetVotes() {
-            votesA = 0; votesB = 0;
-            syncVotesToStorage();
-            updateVoteBars();
-        }
-
-        function syncVotesToStorage() {
-            localStorage.setItem('cato_votes_data', JSON.stringify({
-                slideIdx: currentSlideIdx,
-                votesA: votesA,
-                votesB: votesB
-            }));
-        }
-
-        function updateVoteBars() {
-            const total = votesA + votesB || 1;
-            const pctA = Math.round((votesA / total) * 100);
-            const pctB = Math.round((votesB / total) * 100);
-            document.getElementById('percent-a').innerText = `${pctA}%`;
-            document.getElementById('percent-b').innerText = `${pctB}%`;
-            document.getElementById('votes-a-count').innerText = votesA;
-            document.getElementById('votes-b-count').innerText = votesB;
-            document.getElementById('bar-a').style.width = `${pctA}%`;
-            document.getElementById('bar-b').style.width = `${pctB}%`;
-        }
-
-        function evaluateVoteResult() {
-            const slide = scenarioData[currentSlideIdx];
-            if (votesB > votesA) {
-                document.getElementById('fail-title').innerText = slide.optionB?.failTitle || 'Развязка';
-                document.getElementById('fail-desc').innerText = slide.optionB?.failDesc || 'Альтернативный исход...';
-                document.getElementById('fail-image').src = slide.optionB?.failImage || slide.image || '';
-                switchMode('gameover');
-            } else {
-                nextSlideInfo();
-            }
-        }
-
-        function restoreCheckpoint() { switchMode('presentation'); }
-        function resetStory() { currentSlideIdx = 0; switchMode('presentation'); }
-
-        // --- РЕДАКТОР ---
-        function renderEditor() {
-            document.getElementById('editor-slides-count').innerText = scenarioData.length;
-            const listContainer = document.getElementById('editor-slides-list');
-            listContainer.innerHTML = scenarioData.map((s, idx) => `
-                <div onclick="selectEditorSlide(${idx})" class="p-3 rounded-lg border cursor-pointer transition-all ${idx === editingSlideIdx ? 'bg-roman-red border-roman-gold text-white' : 'bg-roman-stone/60 border-roman-gold/20 hover:border-roman-gold/50'}">
-                    <div class="text-xs font-bold font-cinzel">Слайд #${idx + 1} (${s.type})</div>
-                    <div class="text-sm truncate">${s.title}</div>
-                </div>
-            `).join('');
-            loadSlideToForm(editingSlideIdx);
-        }
-
-        function selectEditorSlide(idx) {
-            editingSlideIdx = idx;
-            renderEditor();
-        }
-
-        function loadSlideToForm(idx) {
-            const slide = scenarioData[idx];
-            if (!slide) return;
-            document.getElementById('editor-form-header').innerText = `Редактирование слайда #${idx + 1}`;
-            document.getElementById('edit-slide-type').value = slide.type;
-            document.getElementById('edit-slide-era').value = slide.era || '';
-            document.getElementById('edit-slide-timer').value = slide.timer || 25;
-            document.getElementById('edit-slide-title').value = slide.title || '';
-            document.getElementById('edit-slide-image').value = slide.image || '';
-            document.getElementById('edit-slide-caption').value = slide.imageCaption || '';
-            document.getElementById('edit-slide-text').value = slide.storyText || '';
-            document.getElementById('edit-img-preview').src = slide.image || '';
-
-            if (slide.type === 'choice') {
-                document.getElementById('edit-slide-question').value = slide.questionText || '';
-                document.getElementById('edit-opt-a-title').value = slide.optionA?.title || '';
-                document.getElementById('edit-opt-a-desc').value = slide.optionA?.desc || '';
-                document.getElementById('edit-opt-b-title').value = slide.optionB?.title || '';
-                document.getElementById('edit-opt-b-desc').value = slide.optionB?.desc || '';
-                document.getElementById('edit-fail-title').value = slide.optionB?.failTitle || '';
-                document.getElementById('edit-fail-desc').value = slide.optionB?.failDesc || '';
-                document.getElementById('edit-fail-image').value = slide.optionB?.failImage || '';
-            }
-            toggleEditorTypeFields();
-        }
-
-        function toggleEditorTypeFields() {
-            const type = document.getElementById('edit-slide-type').value;
-            document.getElementById('editor-choice-fields').style.display = (type === 'choice') ? 'block' : 'none';
-        }
-
-        function saveCurrentSlideChanges() {
-            const type = document.getElementById('edit-slide-type').value;
-            const slide = {
-                id: editingSlideIdx + 1,
-                type: type,
-                era: document.getElementById('edit-slide-era').value,
-                timer: parseInt(document.getElementById('edit-slide-timer').value) || 25,
-                title: document.getElementById('edit-slide-title').value,
-                image: document.getElementById('edit-slide-image').value,
-                imageCaption: document.getElementById('edit-slide-caption').value,
-                storyText: document.getElementById('edit-slide-text').value
-            };
-
-            if (type === 'choice') {
-                slide.questionText = document.getElementById('edit-slide-question').value;
-                slide.optionA = {
-                    title: document.getElementById('edit-opt-a-title').value,
-                    desc: document.getElementById('edit-opt-a-desc').value
-                };
-                slide.optionB = {
-                    title: document.getElementById('edit-opt-b-title').value,
-                    desc: document.getElementById('edit-opt-b-desc').value,
-                    failTitle: document.getElementById('edit-fail-title').value,
-                    failDesc: document.getElementById('edit-fail-desc').value,
-                    failImage: document.getElementById('edit-fail-image').value
-                };
-            }
-
-            scenarioData[editingSlideIdx] = slide;
-            localStorage.setItem('cato_scenario_save', JSON.stringify(scenarioData));
-            renderEditor();
-            alert('Слайд сохранен!');
-        }
-
-        function createNewSlide() {
-            scenarioData.push({
-                id: scenarioData.length + 1,
-                type: 'info',
-                title: 'Новый слайд',
-                storyText: 'Текст слайда...'
-            });
-            editingSlideIdx = scenarioData.length - 1;
-            renderEditor();
-        }
-
-        function deleteCurrentSlide() {
-            if (scenarioData.length <= 1) return alert('Минимум 1 слайд!');
-            scenarioData.splice(editingSlideIdx, 1);
-            editingSlideIdx = Math.max(0, editingSlideIdx - 1);
-            renderEditor();
-        }
-
-        function previewEditorImage() {
-            document.getElementById('edit-img-preview').src = document.getElementById('edit-slide-image').value;
-        }
-
-        function handleLocalImageUpload(evt) {
-            const file = evt.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('edit-slide-image').value = e.target.result;
-                    previewEditorImage();
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function handleFailImageUpload(evt) {
-            const file = evt.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('edit-fail-image').value = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function exportScenarioJSON() {
-            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scenarioData, null, 2));
-            const a = document.createElement('a'); a.href = str; a.download = "cato_quest_scenario.json";
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-
-        function importScenarioJSON(evt) {
-            const file = evt.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    try {
-                        scenarioData = JSON.parse(e.target.result);
-                        editingSlideIdx = 0;
-                        renderEditor();
-                        alert('Сценарий импортирован!');
-                    } catch(err) { alert('Ошибка структуры JSON'); }
-                };
-                reader.readAsText(file);
-            }
-        }
-
-        // --- РЕЖИМ ЗРИТЕЛЯ (СИХРОНИЗИРОВАННЫЙ) ---
         function renderVoter() {
-            // Подтягиваем актуальный слайд от ведущего
-            const savedSlideIdx = parseInt(localStorage.getItem('cato_current_slide')) || currentSlideIdx;
-            const slide = scenarioData[savedSlideIdx];
+            const slide = slides[currentIdx];
             if (!slide) return;
 
-            document.getElementById('voter-slide-title').innerText = slide.title;
-            const container = document.getElementById('voter-buttons-box');
-            const statusMsg = document.getElementById('voter-msg-status');
+            document.getElementById('voter-title').innerText = slide.title;
+            const btnBox = document.getElementById('voter-buttons');
+            const statusMsg = document.getElementById('voter-status-msg');
 
             if (slide.type === 'choice') {
-                document.getElementById('voter-slide-question').innerText = slide.questionText || '';
-                
-                if (hasVotedCurrentSlide) {
-                    container.innerHTML = '';
-                    statusMsg.innerText = '✓ Ваш голос принят! Ожидайте итогов на экране.';
+                document.getElementById('voter-question').innerText = slide.questionText;
+                if (hasVoted) {
+                    btnBox.innerHTML = '';
                     statusMsg.classList.remove('hidden');
                 } else {
                     statusMsg.classList.add('hidden');
-                    container.innerHTML = `
-                        <button onclick="voterVote('A')" class="w-full bg-roman-red hover:bg-roman-darkRed border border-roman-gold text-white font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm active:scale-95">
-                            Вариант A: ${slide.optionA?.title || ''}
+                    btnBox.innerHTML = `
+                        <button onclick="voterClick('A')" class="w-full bg-roman-red border border-roman-gold text-white font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
+                            Вариант A: ${slide.optionA.title}
                         </button>
-                        <button onclick="voterVote('B')" class="w-full bg-roman-stone hover:bg-roman-darkRed border border-roman-gold text-roman-lightGold font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm active:scale-95">
-                            Вариант B: ${slide.optionB?.title || ''}
+                        <button onclick="voterClick('B')" class="w-full bg-roman-stone border border-roman-gold text-roman-lightGold font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
+                            Вариант B: ${slide.optionB.title}
                         </button>
                     `;
                 }
             } else {
-                document.getElementById('voter-slide-question').innerText = 'Слушаем лектора...';
-                container.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание запуска следующего вопроса...</div>';
+                document.getElementById('voter-question').innerText = 'Слушаем повествование лектора...';
+                btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего решения</div>';
                 statusMsg.classList.add('hidden');
             }
         }
 
-        function voterVote(type) {
-            if (hasVotedCurrentSlide) return;
-            hasVotedCurrentSlide = true;
+        function voterClick(type) {
+            if (hasVoted) return;
+            hasVoted = true;
 
-            // Зачитываем прошлый счетчик и прибавляем голос
-            const savedSlideIdx = parseInt(localStorage.getItem('cato_current_slide')) || currentSlideIdx;
-            const savedVotes = JSON.parse(localStorage.getItem('cato_votes_data') || '{}');
-            
-            let curA = (savedVotes.slideIdx === savedSlideIdx) ? (savedVotes.votesA || 0) : 0;
-            let curB = (savedVotes.slideIdx === savedSlideIdx) ? (savedVotes.votesB || 0) : 0;
-
-            if (type === 'A') curA++;
-            if (type === 'B') curB++;
-
-            localStorage.setItem('cato_votes_data', JSON.stringify({
-                slideIdx: savedSlideIdx,
-                votesA: curA,
-                votesB: curB
-            }));
+            // Безопасно увеличиваем значение голоса в облаке Firebase
+            db.ref('votes/' + type).transaction((current) => {
+                return (current || 0) + 1;
+            });
 
             renderVoter();
         }
 
-        // --- QR ---
+        function simulateVotes() {
+            const rA = Math.floor(Math.random() * 25) + 10;
+            const rB = Math.floor(Math.random() * 10);
+            db.ref('votes').set({ A: rA, B: rB });
+        }
+
+        function updateBars() {
+            const total = votesA + votesB || 1;
+            const pctA = Math.round((votesA / total) * 100);
+            const pctB = Math.round((votesB / total) * 100);
+            document.getElementById('pct-a').innerText = `${pctA}%`;
+            document.getElementById('pct-b').innerText = `${pctB}%`;
+            document.getElementById('bar-a').style.width = `${pctA}%`;
+            document.getElementById('bar-b').style.width = `${pctB}%`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInt);
+            let sec = 25;
+            timerInt = setInterval(() => {
+                sec--;
+                document.getElementById('timer-sec').innerText = sec;
+                document.getElementById('timer-bar').style.width = `${(sec / 25) * 100}%`;
+                if (sec <= 0) {
+                    clearInterval(timerInt);
+                    evaluateResult();
+                }
+            }, 1000);
+        }
+
+        function evaluateResult() {
+            const slide = slides[currentIdx];
+            if (votesB > votesA) {
+                document.getElementById('fail-title').innerText = slide.optionB.failTitle;
+                document.getElementById('fail-desc').innerText = slide.optionB.failDesc;
+                document.getElementById('fail-img').src = slide.optionB.failImage;
+                switchMode('gameover');
+            } else {
+                nextSlide();
+            }
+        }
+
+        function nextSlide() {
+            if (currentIdx < slides.length - 1) {
+                currentIdx++;
+                renderPresentation();
+            }
+        }
+
+        function restartLecture() {
+            currentIdx = 0;
+            switchMode('presentation');
+        }
+
         function toggleQRModal() {
             const modal = document.getElementById('qr-modal');
             modal.classList.toggle('hidden');
@@ -929,6 +453,12 @@
             if (url && typeof QRCode !== 'undefined') {
                 new QRCode(target, { text: url, width: 175, height: 175, colorDark: "#4A0E0E", colorLight: "#ffffff" });
             }
+        }
+
+        function exportJSON() {
+            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(slides, null, 2));
+            const a = document.createElement('a'); a.href = str; a.download = "cato_quest.json";
+            document.body.appendChild(a); a.click(); a.remove();
         }
     </script>
 </body>
