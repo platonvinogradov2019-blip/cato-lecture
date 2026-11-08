@@ -177,3 +177,287 @@
                     content: "Катон героически проявил себя в битве при Метавре. Его суровость и строгие ценности заслужили уважение солдат и сенаторов.",
                     image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
                     isVote: false,
+                    options: []
+                }
+            ]
+        };
+
+        let currentSlideIndex = 0;
+        let timerInterval = null;
+        let currentFastFail = null;
+
+        function initApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+
+            if (mode === 'voter') {
+                const header = document.getElementById('app-header');
+                if (header) header.remove();
+                switchMode('voter');
+            } else {
+                const saved = localStorage.getItem('cato_lecture_data');
+                if (saved) {
+                    try { lectureData = JSON.parse(saved); } catch(e) {}
+                }
+                switchMode('presenter');
+            }
+
+            const qrInput = document.getElementById('qr-url-input');
+            if (qrInput && !qrInput.value) {
+                qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
+            }
+        }
+
+        function switchMode(mode) {
+            document.getElementById('view-presenter').classList.add('hidden');
+            document.getElementById('view-editor').classList.add('hidden');
+            document.getElementById('view-voter').classList.add('hidden');
+
+            ['presenter', 'editor', 'voter'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if (btn) {
+                    btn.className = m === mode 
+                        ? "px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-amber-500 text-red-950 shadow-md"
+                        : "px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100";
+                }
+            });
+
+            if (mode === 'presenter') {
+                document.getElementById('view-presenter').classList.remove('hidden');
+                renderPresenterSlide();
+            } else if (mode === 'editor') {
+                document.getElementById('view-editor').classList.remove('hidden');
+                renderEditor();
+            } else if (mode === 'voter') {
+                document.getElementById('view-voter').classList.remove('hidden');
+                renderVoterView();
+            }
+        }
+
+        function renderPresenterSlide() {
+            const slide = lectureData.slides[currentSlideIndex];
+            if (!slide) return;
+
+            document.getElementById('pres-slide-badge').innerText = `Слайд ${currentSlideIndex + 1} из ${lectureData.slides.length}`;
+            document.getElementById('pres-title').innerText = slide.title;
+            document.getElementById('pres-content').innerText = slide.content;
+
+            const imgEl = document.getElementById('pres-image');
+            if (slide.image) {
+                imgEl.src = slide.image;
+                imgEl.classList.remove('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+            }
+
+            const optContainer = document.getElementById('pres-options-container');
+            const votingControls = document.getElementById('voting-controls');
+            const fastFailBox = document.getElementById('pres-fastfail-box');
+
+            if (currentFastFail) {
+                optContainer.innerHTML = '';
+                votingControls.classList.add('hidden');
+                fastFailBox.classList.remove('hidden');
+                document.getElementById('pres-fastfail-text').innerText = currentFastFail.text;
+                
+                const ffImg = document.getElementById('pres-fastfail-image');
+                if (currentFastFail.image) {
+                    ffImg.src = currentFastFail.image;
+                    ffImg.classList.remove('hidden');
+                } else {
+                    ffImg.classList.add('hidden');
+                }
+            } else {
+                fastFailBox.classList.add('hidden');
+                if (slide.isVote) {
+                    votingControls.classList.remove('hidden');
+                    optContainer.innerHTML = slide.options.map((opt, idx) => `
+                        <div class="bg-red-950/60 border border-amber-500/40 p-3.5 rounded-xl flex justify-between items-center">
+                            <span class="text-sm text-amber-100"><strong class="text-amber-400 mr-2">[Вариант ${idx+1}]</strong> ${opt.text}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    votingControls.classList.add('hidden');
+                    optContainer.innerHTML = '';
+                }
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlideIndex < lectureData.slides.length - 1) {
+                currentSlideIndex++;
+                currentFastFail = null;
+                renderPresenterSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                currentFastFail = null;
+                renderPresenterSlide();
+            }
+        }
+
+        function resetLecture() {
+            currentSlideIndex = 0;
+            currentFastFail = null;
+            renderPresenterSlide();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            let timeLeft = 15;
+            const timerBox = document.getElementById('pres-timer-box');
+            const timerVal = document.getElementById('pres-timer-val');
+            timerBox.classList.remove('hidden');
+            timerBox.classList.add('flex');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerVal.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerBox.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        function renderVoterView() {
+            const slide = lectureData.slides[currentSlideIndex];
+            if (!slide) return;
+
+            document.getElementById('voter-title').innerText = slide.title;
+            document.getElementById('voter-content').innerText = slide.content;
+
+            const btnContainer = document.getElementById('voter-buttons-container');
+            if (slide.isVote) {
+                btnContainer.innerHTML = slide.options.map((opt, idx) => `
+                    <button onclick="castVote(${idx})" class="w-full bg-amber-500 hover:bg-amber-400 text-red-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg text-sm">
+                        Вариант ${idx + 1}: ${opt.text}
+                    </button>
+                `).join('');
+            } else {
+                btnContainer.innerHTML = `<div class="text-sm text-amber-200/60 py-4">Слушаем лектора...</div>`;
+            }
+        }
+
+        function castVote(optionIndex) {
+            const slide = lectureData.slides[currentSlideIndex];
+            const opt = slide.options[optionIndex];
+            if (opt && opt.fastFail) {
+                currentFastFail = { text: opt.failText, image: opt.failImage };
+            } else if (opt && opt.nextSlide) {
+                const targetIdx = lectureData.slides.findIndex(s => s.id === opt.nextSlide);
+                if (targetIdx !== -1) currentSlideIndex = targetIdx;
+            }
+            alert('Голос принят!');
+        }
+
+        function renderEditor() {
+            const container = document.getElementById('editor-slides-list');
+            container.innerHTML = lectureData.slides.map((slide, sIdx) => `
+                <div class="bg-red-950/60 border border-amber-500/30 rounded-2xl p-5 space-y-4 shadow-xl">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider font-roman">Слайд #${slide.id}</span>
+                        <button onclick="deleteSlide(${sIdx})" class="text-red-400 hover:text-red-300 text-sm font-bold">Удалить</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-amber-200/70 mb-1">Заголовок слайда</label>
+                            <input type="text" value="${slide.title}" onchange="updateSlideField(${sIdx}, 'title', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-amber-200/70 mb-1">URL картинки</label>
+                            <input type="text" value="${slide.image || ''}" onchange="updateSlideField(${sIdx}, 'image', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-amber-200/70 mb-1">Текст слайда</label>
+                        <textarea rows="3" onchange="updateSlideField(${sIdx}, 'content', this.value)" class="w-full bg-red-900/40 border border-amber-500/30 rounded-xl px-3 py-2 text-sm text-amber-100">${slide.content}</textarea>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${slide.isVote ? 'checked' : ''} onchange="toggleSlideVote(${sIdx}, this.checked)" id="vote-${sIdx}">
+                        <label for="vote-${sIdx}" class="text-sm text-amber-200 cursor-pointer">Включить голосование</label>
+                    </div>
+
+                    ${slide.isVote ? `
+                        <div class="space-y-3 pt-2 border-t border-amber-500/20">
+                            ${slide.options.map((opt, oIdx) => `
+                                <div class="bg-red-900/30 p-3 rounded-xl border border-amber-500/20 space-y-2">
+                                    <input type="text" value="${opt.text}" onchange="updateOptionText(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1.5 text-sm text-amber-100" placeholder="Вариант ответа">
+                                    <label class="flex items-center gap-2 text-xs text-amber-400">
+                                        <input type="checkbox" ${opt.fastFail ? 'checked' : ''} onchange="toggleFastFail(${sIdx}, ${oIdx}, this.checked)"> Fast-Fail развилка
+                                    </label>
+                                    ${opt.fastFail ? `
+                                        <input type="text" value="${opt.failText || ''}" onchange="updateFailText(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1 text-xs text-amber-100" placeholder="Текст тупиковой концовки">
+                                        <input type="text" value="${opt.failImage || ''}" onchange="updateFailImage(${sIdx}, ${oIdx}, this.value)" class="w-full bg-red-950 border border-amber-500/30 rounded-lg px-3 py-1 text-xs text-amber-100" placeholder="URL картинки концовки">
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateSlideField(idx, field, val) { lectureData.slides[idx][field] = val; saveToLocal(); }
+        function toggleSlideVote(idx, val) {
+            lectureData.slides[idx].isVote = val;
+            if (val && !lectureData.slides[idx].options.length) {
+                lectureData.slides[idx].options = [
+                    { text: "Вариант 1", nextSlide: null, fastFail: false },
+                    { text: "Вариант 2", nextSlide: null, fastFail: false }
+                ];
+            }
+            saveToLocal(); renderEditor();
+        }
+        function updateOptionText(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].text = val; saveToLocal(); }
+        function toggleFastFail(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].fastFail = val; saveToLocal(); renderEditor(); }
+        function updateFailText(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].failText = val; saveToLocal(); }
+        function updateFailImage(sIdx, oIdx, val) { lectureData.slides[sIdx].options[oIdx].failImage = val; saveToLocal(); }
+        
+        function addNewSlide() {
+            const newId = lectureData.slides.length ? Math.max(...lectureData.slides.map(s => s.id)) + 1 : 1;
+            lectureData.slides.push({ id: newId, title: "Новый слайд", content: "Описание...", image: "", isVote: false, options: [] });
+            saveToLocal(); renderEditor();
+        }
+        function deleteSlide(idx) {
+            if (lectureData.slides.length <= 1) return alert('Нужен минимум 1 слайд');
+            lectureData.slides.splice(idx, 1); saveToLocal(); renderEditor();
+        }
+        function saveToLocal() { localStorage.setItem('cato_lecture_data', JSON.stringify(lectureData)); }
+
+        function exportJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lectureData, null, 2));
+            const a = document.createElement('a'); a.href = dataStr; a.download = "cato_lecture.json"; document.body.appendChild(a); a.click(); a.remove();
+        }
+        function importJson(e) {
+            const reader = new FileReader();
+            if (e.target.files[0]) {
+                reader.readAsText(e.target.files[0], "UTF-8");
+                reader.onload = (evt) => {
+                    try { lectureData = JSON.parse(evt.target.result); saveToLocal(); renderEditor(); alert('Загружено!'); } catch (err) { alert('Ошибка JSON'); }
+                };
+            }
+        }
+
+        function openQrModal() { document.getElementById('qr-modal').classList.remove('hidden'); updateQrCode(); }
+        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+        function updateQrCode() {
+            const url = document.getElementById('qr-url-input').value;
+            const container = document.getElementById('qrcode-render');
+            container.innerHTML = '';
+            if (typeof QRCode !== 'undefined' && url) {
+                new QRCode(container, { text: url, width: 175, height: 175, colorDark: "#450a0a", colorLight: "#ffffff" });
+            }
+        }
+
+        // Прямой выпуск запуска без внешних задержек
+        window.onload = initApp;
+    </script>
+</body>
+</html>
