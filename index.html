@@ -446,6 +446,7 @@
                 </div>
 
                 <div id="voter-buttons-box" class="space-y-4 pt-2"></div>
+                <div id="voter-msg-status" class="text-xs text-roman-gold font-bold hidden"></div>
             </div>
         </section>
 
@@ -508,6 +509,7 @@
         let editingSlideIdx = 0;
         let votesA = 0;
         let votesB = 0;
+        let hasVotedCurrentSlide = false;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -529,6 +531,24 @@
             if (qrInput && !qrInput.value) {
                 qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
             }
+
+            // Синхронизация между вкладками / устройствами
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'cato_current_slide') {
+                    currentSlideIdx = parseInt(e.newValue) || 0;
+                    hasVotedCurrentSlide = false;
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('mode') === 'voter') renderVoter();
+                }
+                if (e.key === 'cato_votes_data') {
+                    const data = JSON.parse(e.newValue || '{}');
+                    if (data.slideIdx === currentSlideIdx) {
+                        votesA = data.votesA || 0;
+                        votesB = data.votesB || 0;
+                        updateVoteBars();
+                    }
+                }
+            });
         };
 
         function switchMode(mode) {
@@ -563,6 +583,9 @@
         function renderPresentation() {
             const slide = scenarioData[currentSlideIdx];
             if (!slide) return;
+
+            // Передаем текущий слайд для всех зрителей
+            localStorage.setItem('cato_current_slide', currentSlideIdx);
 
             document.getElementById('step-number-badge').innerText = (currentSlideIdx + 1);
             document.getElementById('chapter-era').innerText = slide.era || 'История';
@@ -631,18 +654,29 @@
         function castVotePresenter(type) {
             if (type === 'A') votesA++;
             if (type === 'B') votesB++;
+            syncVotesToStorage();
             updateVoteBars();
         }
 
         function simulateAudienceVotes() {
             votesA = Math.floor(Math.random() * 25) + 10;
             votesB = Math.floor(Math.random() * 10);
+            syncVotesToStorage();
             updateVoteBars();
         }
 
         function resetVotes() {
             votesA = 0; votesB = 0;
+            syncVotesToStorage();
             updateVoteBars();
+        }
+
+        function syncVotesToStorage() {
+            localStorage.setItem('cato_votes_data', JSON.stringify({
+                slideIdx: currentSlideIdx,
+                votesA: votesA,
+                votesB: votesB
+            }));
         }
 
         function updateVoteBars() {
@@ -822,32 +856,63 @@
             }
         }
 
-        // --- РЕЖИМ ЗРИТЕЛЯ ---
+        // --- РЕЖИМ ЗРИТЕЛЯ (СИХРОНИЗИРОВАННЫЙ) ---
         function renderVoter() {
-            const slide = scenarioData[currentSlideIdx];
+            // Подтягиваем актуальный слайд от ведущего
+            const savedSlideIdx = parseInt(localStorage.getItem('cato_current_slide')) || currentSlideIdx;
+            const slide = scenarioData[savedSlideIdx];
             if (!slide) return;
+
             document.getElementById('voter-slide-title').innerText = slide.title;
             const container = document.getElementById('voter-buttons-box');
+            const statusMsg = document.getElementById('voter-msg-status');
 
             if (slide.type === 'choice') {
                 document.getElementById('voter-slide-question').innerText = slide.questionText || '';
-                container.innerHTML = `
-                    <button onclick="voterVote('A')" class="w-full bg-roman-red hover:bg-roman-darkRed border border-roman-gold text-white font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm">
-                        Вариант A: ${slide.optionA?.title || ''}
-                    </button>
-                    <button onclick="voterVote('B')" class="w-full bg-roman-stone hover:bg-roman-darkRed border border-roman-gold text-roman-lightGold font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm">
-                        Вариант B: ${slide.optionB?.title || ''}
-                    </button>
-                `;
+                
+                if (hasVotedCurrentSlide) {
+                    container.innerHTML = '';
+                    statusMsg.innerText = '✓ Ваш голос принят! Ожидайте итогов на экране.';
+                    statusMsg.classList.remove('hidden');
+                } else {
+                    statusMsg.classList.add('hidden');
+                    container.innerHTML = `
+                        <button onclick="voterVote('A')" class="w-full bg-roman-red hover:bg-roman-darkRed border border-roman-gold text-white font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm active:scale-95">
+                            Вариант A: ${slide.optionA?.title || ''}
+                        </button>
+                        <button onclick="voterVote('B')" class="w-full bg-roman-stone hover:bg-roman-darkRed border border-roman-gold text-roman-lightGold font-bold py-4 px-4 rounded-2xl transition shadow-lg text-sm active:scale-95">
+                            Вариант B: ${slide.optionB?.title || ''}
+                        </button>
+                    `;
+                }
             } else {
-                document.getElementById('voter-slide-question').innerText = 'Слушаем повествование...';
-                container.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание выбора ведущего</div>';
+                document.getElementById('voter-slide-question').innerText = 'Слушаем лектора...';
+                container.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание запуска следующего вопроса...</div>';
+                statusMsg.classList.add('hidden');
             }
         }
 
         function voterVote(type) {
-            castVotePresenter(type);
-            alert(`Вы проголосовали за Вариант ${type}!`);
+            if (hasVotedCurrentSlide) return;
+            hasVotedCurrentSlide = true;
+
+            // Зачитываем прошлый счетчик и прибавляем голос
+            const savedSlideIdx = parseInt(localStorage.getItem('cato_current_slide')) || currentSlideIdx;
+            const savedVotes = JSON.parse(localStorage.getItem('cato_votes_data') || '{}');
+            
+            let curA = (savedVotes.slideIdx === savedSlideIdx) ? (savedVotes.votesA || 0) : 0;
+            let curB = (savedVotes.slideIdx === savedSlideIdx) ? (savedVotes.votesB || 0) : 0;
+
+            if (type === 'A') curA++;
+            if (type === 'B') curB++;
+
+            localStorage.setItem('cato_votes_data', JSON.stringify({
+                slideIdx: savedSlideIdx,
+                votesA: curA,
+                votesB: curB
+            }));
+
+            renderVoter();
         }
 
         // --- QR ---
