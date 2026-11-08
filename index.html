@@ -15,7 +15,7 @@
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <!-- FIREBASE SDK (Realtime Database) -->
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -65,7 +65,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- HEADER (Вырезается автоматически при ?mode=voter) -->
+    <!-- HEADER -->
     <header id="app-header" class="bg-roman-darkRed border-b-2 border-roman-gold p-4 shadow-xl">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -202,9 +202,108 @@
 
         <!-- EDITOR VIEW -->
         <section id="editor-view" class="hidden space-y-6">
-            <div class="roman-card rounded-xl p-6 border-t-4 border-t-roman-gold">
-                <h2 class="font-cinzel text-xl font-bold text-roman-gold mb-4">Редактор сценария</h2>
-                <button onclick="exportJSON()" class="bg-roman-gold text-roman-darkRed font-bold px-4 py-2 rounded text-xs uppercase">Скачать JSON</button>
+            <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
+                    <p class="text-xs text-gray-300">Добавляйте слайды, меняйте тексты, варианты ответов и картинки</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Добавить слайд
+                    </button>
+                    <button onclick="exportJSON()" class="bg-roman-gold text-roman-darkRed font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
+                        <i class="fa-solid fa-download mr-1"></i> Экспорт JSON
+                    </button>
+                    <label class="bg-roman-stone border border-roman-gold/50 text-roman-lightGold font-bold px-4 py-2 rounded text-xs uppercase cursor-pointer shadow transition">
+                        <i class="fa-solid fa-upload mr-1"></i> Импорт JSON
+                        <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="roman-card rounded-xl p-4 max-h-[600px] overflow-y-auto space-y-2">
+                    <div class="text-xs font-cinzel text-roman-gold uppercase pb-2 border-b border-roman-gold/20">Список слайдов</div>
+                    <div id="editor-list" class="space-y-2"></div>
+                </div>
+
+                <div class="lg:col-span-2 roman-card rounded-xl p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b border-roman-gold/30 pb-3">
+                        <h3 id="editor-form-title" class="font-cinzel text-lg font-bold text-white">Редактирование слайда</h3>
+                        <button onclick="deleteCurrentSlide()" class="bg-red-950 text-red-300 border border-red-800 text-xs px-3 py-1.5 rounded">
+                            <i class="fa-solid fa-trash mr-1"></i> Удалить слайд
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Тип слайда:</label>
+                            <select id="edit-type" onchange="toggleEditorFields()" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                                <option value="choice">С развилкой (Голосование)</option>
+                                <option value="info">Информационный</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Эпоха:</label>
+                            <input type="text" id="edit-era" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Таймер (сек):</label>
+                            <input type="number" id="edit-timer" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" value="25">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Заголовок слайда:</label>
+                        <input type="text" id="edit-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-bold">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки:</label>
+                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://...">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
+                            <input type="file" accept="image/*" onchange="uploadEditorImage(event)" class="text-xs text-gray-300 mt-1">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Текст истории:</label>
+                        <textarea id="edit-story" rows="3" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-serif"></textarea>
+                    </div>
+
+                    <div id="editor-choice-box" class="space-y-3 pt-3 border-t border-roman-gold/30">
+                        <div>
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Вопрос для голосования:</label>
+                            <input type="text" id="edit-question" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="bg-roman-stone/60 p-3 rounded border border-emerald-900/50 space-y-2">
+                                <div class="text-xs font-bold text-emerald-400 uppercase">Вариант A (Главный путь)</div>
+                                <input type="text" id="edit-opt-a-title" placeholder="Заголовок" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white">
+                                <textarea id="edit-opt-a-desc" rows="2" placeholder="Описание" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white"></textarea>
+                            </div>
+
+                            <div class="bg-roman-stone/60 p-3 rounded border border-red-900/50 space-y-2">
+                                <div class="text-xs font-bold text-red-400 uppercase">Вариант B (Альтернативный исход / Фейл)</div>
+                                <input type="text" id="edit-opt-b-title" placeholder="Заголовок" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white">
+                                <textarea id="edit-opt-b-desc" rows="2" placeholder="Описание" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white"></textarea>
+                                <input type="text" id="edit-fail-title" placeholder="Заголовок экрана поражения" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                                <textarea id="edit-fail-desc" rows="2" placeholder="Текст тупиковой концовки" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
+                                <input type="text" id="edit-fail-image" placeholder="URL картинки концовки (Fast-Fail)" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-roman-gold/30 text-right">
+                        <button onclick="saveSlideChanges()" class="bg-roman-gold text-roman-darkRed font-cinzel font-bold px-6 py-2 rounded text-xs uppercase shadow">
+                            Сохранить изменения слайда
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -225,14 +324,14 @@
     </div>
 
     <script>
-        // Инициализация Firebase по вашей ссылке
+        // Инициализация Firebase
         const firebaseConfig = {
             databaseURL: "https://cato-lecture-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const defaultData = [
+        let slides = [
             {
                 id: 1,
                 type: 'choice',
@@ -262,21 +361,26 @@
             }
         ];
 
-        let slides = defaultData;
         let currentIdx = 0;
+        let editingIdx = 0;
         let votesA = 0;
         let votesB = 0;
         let timerInt = null;
         let hasVoted = false;
 
         window.onload = function() {
+            // Загружаем сохраненный сценарий из localStorage, если есть
+            const savedSlides = localStorage.getItem('cato_custom_slides');
+            if (savedSlides) {
+                try { slides = JSON.parse(savedSlides); } catch(e) {}
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'voter') {
                 const header = document.getElementById('app-header');
                 if (header) header.remove();
                 switchMode('voter');
                 
-                // Слушаем смену слайдов в реальном времени от ведущего
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null && newIdx !== currentIdx) {
@@ -285,11 +389,8 @@
                         renderVoter();
                     }
                 });
-
             } else {
                 switchMode('presentation');
-                
-                // Ведущий слушает поступающие голоса из облака в реальном времени
                 db.ref('votes').on('value', (snapshot) => {
                     const data = snapshot.val() || { A: 0, B: 0 };
                     votesA = data.A || 0;
@@ -309,7 +410,17 @@
             });
             document.getElementById(`${mode}-view`).classList.remove('hidden');
 
+            ['presentation', 'editor', 'voter'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if (btn) {
+                    btn.className = (m === mode)
+                        ? "px-3 py-1.5 rounded font-bold uppercase bg-roman-red text-white"
+                        : "px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold";
+                }
+            });
+
             if (mode === 'presentation') renderPresentation();
+            if (mode === 'editor') renderEditor();
             if (mode === 'voter') renderVoter();
         }
 
@@ -317,9 +428,8 @@
             const slide = slides[currentIdx];
             if (!slide) return;
 
-            // Передаем номер текущего слайда в облако
             db.ref('currentSlide').set(currentIdx);
-            db.ref('votes').set({ A: 0, B: 0 }); // Сбрасываем голоса при смене слайда
+            db.ref('votes').set({ A: 0, B: 0 });
 
             document.getElementById('step-badge').innerText = currentIdx + 1;
             document.getElementById('chapter-era').innerText = slide.era || '';
@@ -343,6 +453,138 @@
             }
         }
 
+        // --- РЕДАКТОР ---
+        function renderEditor() {
+            const listEl = document.getElementById('editor-list');
+            listEl.innerHTML = slides.map((s, idx) => `
+                <div onclick="selectSlide(${idx})" class="p-2 rounded cursor-pointer text-xs transition ${idx === editingIdx ? 'bg-roman-red text-white font-bold' : 'bg-roman-stone/60 text-gray-300 hover:bg-roman-stone'}">
+                    #${idx + 1}: ${s.title}
+                </div>
+            `).join('');
+            loadSlideToForm(editingIdx);
+        }
+
+        function selectSlide(idx) {
+            editingIdx = idx;
+            renderEditor();
+        }
+
+        function loadSlideToForm(idx) {
+            const s = slides[idx];
+            if (!s) return;
+            document.getElementById('editor-form-title').innerText = `Редактирование слайда #${idx + 1}`;
+            document.getElementById('edit-type').value = s.type || 'choice';
+            document.getElementById('edit-era').value = s.era || '';
+            document.getElementById('edit-timer').value = s.timer || 25;
+            document.getElementById('edit-title').value = s.title || '';
+            document.getElementById('edit-image').value = s.image || '';
+            document.getElementById('edit-story').value = s.storyText || '';
+
+            if (s.type === 'choice') {
+                document.getElementById('edit-question').value = s.questionText || '';
+                document.getElementById('edit-opt-a-title').value = s.optionA?.title || '';
+                document.getElementById('edit-opt-a-desc').value = s.optionA?.desc || '';
+                document.getElementById('edit-opt-b-title').value = s.optionB?.title || '';
+                document.getElementById('edit-opt-b-desc').value = s.optionB?.desc || '';
+                document.getElementById('edit-fail-title').value = s.optionB?.failTitle || '';
+                document.getElementById('edit-fail-desc').value = s.optionB?.failDesc || '';
+                document.getElementById('edit-fail-image').value = s.optionB?.failImage || '';
+            }
+            toggleEditorFields();
+        }
+
+        function toggleEditorFields() {
+            const type = document.getElementById('edit-type').value;
+            document.getElementById('editor-choice-box').style.display = (type === 'choice') ? 'block' : 'none';
+        }
+
+        function saveSlideChanges() {
+            const type = document.getElementById('edit-type').value;
+            const s = {
+                id: editingIdx + 1,
+                type: type,
+                era: document.getElementById('edit-era').value,
+                timer: parseInt(document.getElementById('edit-timer').value) || 25,
+                title: document.getElementById('edit-title').value,
+                image: document.getElementById('edit-image').value,
+                storyText: document.getElementById('edit-story').value
+            };
+
+            if (type === 'choice') {
+                s.questionText = document.getElementById('edit-question').value;
+                s.optionA = {
+                    title: document.getElementById('edit-opt-a-title').value,
+                    desc: document.getElementById('edit-opt-a-desc').value
+                };
+                s.optionB = {
+                    title: document.getElementById('edit-opt-b-title').value,
+                    desc: document.getElementById('edit-opt-b-desc').value,
+                    failTitle: document.getElementById('edit-fail-title').value,
+                    failDesc: document.getElementById('edit-fail-desc').value,
+                    failImage: document.getElementById('edit-fail-image').value
+                };
+            }
+
+            slides[editingIdx] = s;
+            localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+            renderEditor();
+            alert('Слайд успешно сохранен!');
+        }
+
+        function createNewSlide() {
+            slides.push({
+                id: slides.length + 1,
+                type: 'info',
+                title: 'Новый слайд',
+                storyText: 'Текст истории...'
+            });
+            editingIdx = slides.length - 1;
+            renderEditor();
+        }
+
+        function deleteCurrentSlide() {
+            if (slides.length <= 1) return alert('Нужен хотя бы один слайд!');
+            slides.splice(editingIdx, 1);
+            editingIdx = Math.max(0, editingIdx - 1);
+            localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+            renderEditor();
+        }
+
+        function uploadEditorImage(evt) {
+            const file = evt.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('edit-image').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function exportJSON() {
+            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(slides, null, 2));
+            const a = document.createElement('a'); a.href = str; a.download = "cato_quest.json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        function importJSON(evt) {
+            const file = evt.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        slides = JSON.parse(e.target.result);
+                        localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+                        editingIdx = 0;
+                        renderEditor();
+                        alert('Сценарий успешно загружен!');
+                    } catch(err) { alert('Ошибка структуры JSON'); }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // --- ЗРИТЕЛЬ ---
         function renderVoter() {
             const slide = slides[currentIdx];
             if (!slide) return;
@@ -377,12 +619,7 @@
         function voterClick(type) {
             if (hasVoted) return;
             hasVoted = true;
-
-            // Безопасно увеличиваем значение голоса в облаке Firebase
-            db.ref('votes/' + type).transaction((current) => {
-                return (current || 0) + 1;
-            });
-
+            db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
             renderVoter();
         }
 
@@ -404,11 +641,11 @@
 
         function startTimer() {
             clearInterval(timerInt);
-            let sec = 25;
+            let sec = slides[currentIdx].timer || 25;
             timerInt = setInterval(() => {
                 sec--;
                 document.getElementById('timer-sec').innerText = sec;
-                document.getElementById('timer-bar').style.width = `${(sec / 25) * 100}%`;
+                document.getElementById('timer-bar').style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
                 if (sec <= 0) {
                     clearInterval(timerInt);
                     evaluateResult();
@@ -421,7 +658,7 @@
             if (votesB > votesA) {
                 document.getElementById('fail-title').innerText = slide.optionB.failTitle;
                 document.getElementById('fail-desc').innerText = slide.optionB.failDesc;
-                document.getElementById('fail-img').src = slide.optionB.failImage;
+                document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
                 switchMode('gameover');
             } else {
                 nextSlide();
@@ -431,7 +668,7 @@
         function nextSlide() {
             if (currentIdx < slides.length - 1) {
                 currentIdx++;
-                renderPresentation();
+                switchMode('presentation');
             }
         }
 
@@ -453,12 +690,6 @@
             if (url && typeof QRCode !== 'undefined') {
                 new QRCode(target, { text: url, width: 175, height: 175, colorDark: "#4A0E0E", colorLight: "#ffffff" });
             }
-        }
-
-        function exportJSON() {
-            const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(slides, null, 2));
-            const a = document.createElement('a'); a.href = str; a.download = "cato_quest.json";
-            document.body.appendChild(a); a.click(); a.remove();
         }
     </script>
 </body>
