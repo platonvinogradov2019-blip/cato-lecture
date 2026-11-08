@@ -219,7 +219,7 @@
             <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
                     <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
-                    <p class="text-xs text-gray-300">Добавляйте слайды, меняйте тексты, варианты ответов и картинки</p>
+                    <p class="text-xs text-gray-300">Изменения мгновенно синхронизируются со всеми зрителями</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
@@ -345,7 +345,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let slides = [
+        const defaultSlides = [
             {
                 id: 1,
                 type: 'choice',
@@ -375,6 +375,7 @@
             }
         ];
 
+        let slides = defaultSlides;
         let currentIdx = 0;
         let lastCheckpointIdx = 0;
         let editingIdx = 0;
@@ -384,30 +385,44 @@
         let hasVoted = false;
 
         window.onload = function() {
-            const savedSlides = localStorage.getItem('cato_custom_slides');
-            if (savedSlides) {
-                try { slides = JSON.parse(savedSlides); } catch(e) {}
-            }
-
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('mode') === 'voter') {
+            const isVoter = (urlParams.get('mode') === 'voter');
+
+            if (isVoter) {
                 const header = document.getElementById('app-header');
                 if (header) header.remove();
                 switchMode('voter');
-                
-                // Слушаем смену слайда от ведущего в реальном времени
+            } else {
+                switchMode('presentation');
+            }
+
+            // Синхронизируем массив слайдов (сценарий) из Firebase в реальном времени
+            db.ref('slides').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    slides = data;
+                } else {
+                    // Если в базе пусто, записываем дефолтные слайды
+                    db.ref('slides').set(defaultSlides);
+                    slides = defaultSlides;
+                }
+                // Перерисовываем текущий вид при обновлении базы
+                if (isVoter) renderVoter();
+                else renderPresentation();
+            });
+
+            if (isVoter) {
+                // Слушаем смену текущего слайда для зрителя
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null) {
                         currentIdx = newIdx;
-                        // Сбрасываем статус голоса на телефоне при каждом изменении слайда
-                        hasVoted = false; 
+                        hasVoted = false; // Разблокируем пульт для нового вопроса
                         renderVoter();
                     }
                 });
             } else {
-                switchMode('presentation');
-                // Слушаем голоса
+                // Ведущий слушает голоса
                 db.ref('votes').on('value', (snapshot) => {
                     const data = snapshot.val() || { A: 0, B: 0 };
                     votesA = data.A || 0;
@@ -448,10 +463,6 @@
             if (slide.type === 'choice') {
                 lastCheckpointIdx = currentIdx;
             }
-
-            // Передаем в Firebase текущий слайд и сбрасываем счетчик голосов для него
-            db.ref('currentSlide').set(currentIdx);
-            db.ref('votes').set({ A: 0, B: 0 });
 
             document.getElementById('step-badge').innerText = currentIdx + 1;
             document.getElementById('chapter-era').innerText = slide.era || '';
@@ -548,9 +559,10 @@
             }
 
             slides[editingIdx] = s;
-            localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+            // Отправляем обновленный массив слайдов прямо в облако Firebase
+            db.ref('slides').set(slides);
             renderEditor();
-            alert('Слайд успешно сохранен!');
+            alert('Слайд успешно сохранен и синхронизирован со зрителями!');
         }
 
         function createNewSlide() {
@@ -561,6 +573,7 @@
                 storyText: 'Текст истории...'
             });
             editingIdx = slides.length - 1;
+            db.ref('slides').set(slides);
             renderEditor();
         }
 
@@ -568,7 +581,7 @@
             if (slides.length <= 1) return alert('Нужен хотя бы один слайд!');
             slides.splice(editingIdx, 1);
             editingIdx = Math.max(0, editingIdx - 1);
-            localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+            db.ref('slides').set(slides);
             renderEditor();
         }
 
@@ -596,17 +609,17 @@
                 reader.onload = e => {
                     try {
                         slides = JSON.parse(e.target.result);
-                        localStorage.setItem('cato_custom_slides', JSON.stringify(slides));
+                        db.ref('slides').set(slides);
                         editingIdx = 0;
                         renderEditor();
-                        alert('Сценарий успешно загружен!');
+                        alert('Сценарий успешно загружен в облако!');
                     } catch(err) { alert('Ошибка структуры JSON'); }
                 };
                 reader.readAsText(file);
             }
         }
 
-        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И ТАЙМЕРОМ ---
+        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И ПЕРЕКЛЮЧЕНИЕМ ---
         function addPresenterVote(type) {
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
         }
@@ -658,6 +671,9 @@
         function nextSlide() {
             if (currentIdx < slides.length - 1) {
                 currentIdx++;
+                // Отправляем в облако новый номер слайда и обнуляем голоса для него
+                db.ref('currentSlide').set(currentIdx);
+                db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
         }
@@ -665,18 +681,24 @@
         function prevSlide() {
             if (currentIdx > 0) {
                 currentIdx--;
+                db.ref('currentSlide').set(currentIdx);
+                db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
         }
 
         function restoreCheckpoint() {
             currentIdx = lastCheckpointIdx;
+            db.ref('currentSlide').set(currentIdx);
+            db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
 
         function restartLecture() {
             currentIdx = 0;
             lastCheckpointIdx = 0;
+            db.ref('currentSlide').set(currentIdx);
+            db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
 
