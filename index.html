@@ -143,7 +143,10 @@
                                 Подвести итог и далее →
                             </button>
                         </div>
-                        <div id="info-controls" class="hidden">
+                        <div id="info-controls" class="hidden space-y-2">
+                            <button onclick="prevSlide()" class="w-full bg-roman-stone border border-roman-gold/40 text-roman-lightGold font-cinzel font-bold py-2 px-3 rounded text-xs uppercase">
+                                ← Назад
+                            </button>
                             <button onclick="nextSlide()" class="w-full bg-roman-gold text-roman-darkRed font-cinzel font-bold py-3 px-3 rounded text-sm uppercase">
                                 Следующий слайд →
                             </button>
@@ -373,7 +376,7 @@
         ];
 
         let currentIdx = 0;
-        let lastCheckpointIdx = 0; // Сохранение последней развилки
+        let lastCheckpointIdx = 0;
         let editingIdx = 0;
         let votesA = 0;
         let votesB = 0;
@@ -392,12 +395,13 @@
                 if (header) header.remove();
                 switchMode('voter');
                 
-                // Слушаем смену слайдов от ведущего
+                // Слушаем смену слайда от ведущего в реальном времени
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
-                    if (newIdx !== null && newIdx !== currentIdx) {
+                    if (newIdx !== null) {
                         currentIdx = newIdx;
-                        hasVoted = false; // Сбрасываем статус голоса для нового вопроса
+                        // Сбрасываем статус голоса на телефоне при каждом изменении слайда
+                        hasVoted = false; 
                         renderVoter();
                     }
                 });
@@ -441,12 +445,11 @@
             const slide = slides[currentIdx];
             if (!slide) return;
 
-            // Если это слайд с выбором, запоминаем его как чекпоинт
             if (slide.type === 'choice') {
                 lastCheckpointIdx = currentIdx;
             }
 
-            // Передаем в облако номер слайда и сбрасываем голоса в нули для нового вопроса
+            // Передаем в Firebase текущий слайд и сбрасываем счетчик голосов для него
             db.ref('currentSlide').set(currentIdx);
             db.ref('votes').set({ A: 0, B: 0 });
 
@@ -655,6 +658,13 @@
         function nextSlide() {
             if (currentIdx < slides.length - 1) {
                 currentIdx++;
+                switchMode('presentation');
+            }
+        }
+
+        function prevSlide() {
+            if (currentIdx > 0) {
+                currentIdx--;
                 switchMode('presentation');
             }
         }
