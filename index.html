@@ -129,6 +129,10 @@
                     <div class="space-y-3 bg-roman-stone/90 p-4 rounded-lg border border-roman-gold/20">
                         <div class="text-xs font-bold text-roman-gold uppercase text-center border-b border-roman-gold/20 pb-2">Управление ведущего</div>
                         <div id="choice-controls" class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="addPresenterVote('A')" class="bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-xs">+1 за A</button>
+                                <button onclick="addPresenterVote('B')" class="bg-amber-800 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-xs">+1 за B</button>
+                            </div>
                             <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs">
                                 <i class="fa-solid fa-play mr-1"></i> Запустить таймер
                             </button>
@@ -157,7 +161,8 @@
                     </div>
                     <h4 id="title-a" class="font-cinzel text-lg font-bold text-white mb-1"></h4>
                     <p id="desc-a" class="text-xs text-gray-300"></p>
-                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-3">
+                    <div class="mt-2 text-xs text-gray-400">Голосов: <strong id="count-a" class="text-white">0</strong></div>
+                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-2">
                         <div id="bar-a" class="h-full bg-roman-gold transition-all w-0"></div>
                     </div>
                 </div>
@@ -169,7 +174,8 @@
                     </div>
                     <h4 id="title-b" class="font-cinzel text-lg font-bold text-white mb-1"></h4>
                     <p id="desc-b" class="text-xs text-gray-300"></p>
-                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-3">
+                    <div class="mt-2 text-xs text-gray-400">Голосов: <strong id="count-b" class="text-white">0</strong></div>
+                    <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden mt-2">
                         <div id="bar-b" class="h-full bg-roman-red transition-all w-0"></div>
                     </div>
                 </div>
@@ -184,9 +190,14 @@
                 </div>
                 <h2 id="fail-title" class="font-cinzel text-2xl font-black text-roman-gold mb-2"></h2>
                 <p id="fail-desc" class="text-base text-roman-parchment leading-relaxed mb-6 font-serif"></p>
-                <button onclick="restartLecture()" class="bg-roman-gold text-roman-darkRed font-cinzel font-bold px-6 py-3 rounded-lg text-sm uppercase">
-                    🔄 Начать с первого слайда
-                </button>
+                <div class="flex justify-center gap-4">
+                    <button onclick="restoreCheckpoint()" class="bg-roman-gold text-roman-darkRed font-cinzel font-bold px-6 py-3 rounded-lg text-sm uppercase">
+                        ↩ Вернуться к развилке
+                    </button>
+                    <button onclick="restartLecture()" class="bg-roman-stone text-roman-lightGold border border-roman-gold/40 font-cinzel font-bold px-6 py-3 rounded-lg text-sm uppercase">
+                        🔄 Начать сначала
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -196,7 +207,7 @@
                 <h2 id="voter-title" class="font-cinzel text-xl font-bold text-roman-gold">Пульт зрителя</h2>
                 <p id="voter-question" class="text-sm text-gray-300"></p>
                 <div id="voter-buttons" class="space-y-3"></div>
-                <div id="voter-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Ваш голос учтен!</div>
+                <div id="voter-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Ваш голос учтен! Ожидайте итогов.</div>
             </div>
         </section>
 
@@ -362,6 +373,7 @@
         ];
 
         let currentIdx = 0;
+        let lastCheckpointIdx = 0; // Сохранение последней развилки
         let editingIdx = 0;
         let votesA = 0;
         let votesB = 0;
@@ -369,7 +381,6 @@
         let hasVoted = false;
 
         window.onload = function() {
-            // Загружаем сохраненный сценарий из localStorage, если есть
             const savedSlides = localStorage.getItem('cato_custom_slides');
             if (savedSlides) {
                 try { slides = JSON.parse(savedSlides); } catch(e) {}
@@ -381,16 +392,18 @@
                 if (header) header.remove();
                 switchMode('voter');
                 
+                // Слушаем смену слайдов от ведущего
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null && newIdx !== currentIdx) {
                         currentIdx = newIdx;
-                        hasVoted = false;
+                        hasVoted = false; // Сбрасываем статус голоса для нового вопроса
                         renderVoter();
                     }
                 });
             } else {
                 switchMode('presentation');
+                // Слушаем голоса
                 db.ref('votes').on('value', (snapshot) => {
                     const data = snapshot.val() || { A: 0, B: 0 };
                     votesA = data.A || 0;
@@ -428,6 +441,12 @@
             const slide = slides[currentIdx];
             if (!slide) return;
 
+            // Если это слайд с выбором, запоминаем его как чекпоинт
+            if (slide.type === 'choice') {
+                lastCheckpointIdx = currentIdx;
+            }
+
+            // Передаем в облако номер слайда и сбрасываем голоса в нули для нового вопроса
             db.ref('currentSlide').set(currentIdx);
             db.ref('votes').set({ A: 0, B: 0 });
 
@@ -584,6 +603,73 @@
             }
         }
 
+        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И ТАЙМЕРОМ ---
+        function addPresenterVote(type) {
+            db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
+        }
+
+        function simulateVotes() {
+            const rA = Math.floor(Math.random() * 25) + 10;
+            const rB = Math.floor(Math.random() * 10);
+            db.ref('votes').set({ A: rA, B: rB });
+        }
+
+        function updateBars() {
+            const total = votesA + votesB || 1;
+            const pctA = Math.round((votesA / total) * 100);
+            const pctB = Math.round((votesB / total) * 100);
+            document.getElementById('pct-a').innerText = `${pctA}%`;
+            document.getElementById('pct-b').innerText = `${pctB}%`;
+            document.getElementById('count-a').innerText = votesA;
+            document.getElementById('count-b').innerText = votesB;
+            document.getElementById('bar-a').style.width = `${pctA}%`;
+            document.getElementById('bar-b').style.width = `${pctB}%`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInt);
+            let sec = slides[currentIdx].timer || 25;
+            timerInt = setInterval(() => {
+                sec--;
+                document.getElementById('timer-sec').innerText = sec;
+                document.getElementById('timer-bar').style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
+                if (sec <= 0) {
+                    clearInterval(timerInt);
+                    evaluateResult();
+                }
+            }, 1000);
+        }
+
+        function evaluateResult() {
+            const slide = slides[currentIdx];
+            if (slide.type === 'choice' && votesB > votesA) {
+                document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
+                document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
+                document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
+                switchMode('gameover');
+            } else {
+                nextSlide();
+            }
+        }
+
+        function nextSlide() {
+            if (currentIdx < slides.length - 1) {
+                currentIdx++;
+                switchMode('presentation');
+            }
+        }
+
+        function restoreCheckpoint() {
+            currentIdx = lastCheckpointIdx;
+            switchMode('presentation');
+        }
+
+        function restartLecture() {
+            currentIdx = 0;
+            lastCheckpointIdx = 0;
+            switchMode('presentation');
+        }
+
         // --- ЗРИТЕЛЬ ---
         function renderVoter() {
             const slide = slides[currentIdx];
@@ -611,7 +697,7 @@
                 }
             } else {
                 document.getElementById('voter-question').innerText = 'Слушаем повествование лектора...';
-                btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего решения</div>';
+                btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего вопроса</div>';
                 statusMsg.classList.add('hidden');
             }
         }
@@ -621,60 +707,6 @@
             hasVoted = true;
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
             renderVoter();
-        }
-
-        function simulateVotes() {
-            const rA = Math.floor(Math.random() * 25) + 10;
-            const rB = Math.floor(Math.random() * 10);
-            db.ref('votes').set({ A: rA, B: rB });
-        }
-
-        function updateBars() {
-            const total = votesA + votesB || 1;
-            const pctA = Math.round((votesA / total) * 100);
-            const pctB = Math.round((votesB / total) * 100);
-            document.getElementById('pct-a').innerText = `${pctA}%`;
-            document.getElementById('pct-b').innerText = `${pctB}%`;
-            document.getElementById('bar-a').style.width = `${pctA}%`;
-            document.getElementById('bar-b').style.width = `${pctB}%`;
-        }
-
-        function startTimer() {
-            clearInterval(timerInt);
-            let sec = slides[currentIdx].timer || 25;
-            timerInt = setInterval(() => {
-                sec--;
-                document.getElementById('timer-sec').innerText = sec;
-                document.getElementById('timer-bar').style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
-                if (sec <= 0) {
-                    clearInterval(timerInt);
-                    evaluateResult();
-                }
-            }, 1000);
-        }
-
-        function evaluateResult() {
-            const slide = slides[currentIdx];
-            if (votesB > votesA) {
-                document.getElementById('fail-title').innerText = slide.optionB.failTitle;
-                document.getElementById('fail-desc').innerText = slide.optionB.failDesc;
-                document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
-                switchMode('gameover');
-            } else {
-                nextSlide();
-            }
-        }
-
-        function nextSlide() {
-            if (currentIdx < slides.length - 1) {
-                currentIdx++;
-                switchMode('presentation');
-            }
-        }
-
-        function restartLecture() {
-            currentIdx = 0;
-            switchMode('presentation');
         }
 
         function toggleQRModal() {
