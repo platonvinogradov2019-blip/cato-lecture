@@ -255,6 +255,7 @@
                             <select id="edit-type" onchange="toggleEditorFields()" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
                                 <option value="choice">С развилкой (Голосование)</option>
                                 <option value="info">Информационный</option>
+                                <option value="finale">Финальный слайд (Эпилог)</option>
                             </select>
                         </div>
                         <div>
@@ -284,7 +285,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Текст истории:</label>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Текст истории / финала:</label>
                         <textarea id="edit-story" rows="3" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-serif"></textarea>
                     </div>
 
@@ -307,7 +308,13 @@
                                 <textarea id="edit-opt-b-desc" rows="2" placeholder="Описание" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white"></textarea>
                                 <input type="text" id="edit-fail-title" placeholder="Заголовок экрана поражения" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
                                 <textarea id="edit-fail-desc" rows="2" placeholder="Текст тупиковой концовки" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
-                                <input type="text" id="edit-fail-image" placeholder="URL картинки концовки (Fast-Fail)" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                                
+                                <!-- Загрузка картинки для плохой концовки -->
+                                <div>
+                                    <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка тупика (URL или файл):</label>
+                                    <input type="text" id="edit-fail-image" placeholder="https://..." class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
+                                    <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -372,6 +379,14 @@
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
                 storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
                 timer: 0
+            },
+            {
+                id: 3,
+                type: 'finale',
+                era: 'Конец пути',
+                title: 'Триумф и Наследие Катона',
+                image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
+                storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
             }
         ];
 
@@ -383,6 +398,7 @@
         let votesB = 0;
         let timerInt = null;
         let hasVoted = false;
+        let isGameOver = false;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -396,33 +412,36 @@
                 switchMode('presentation');
             }
 
-            // Синхронизируем массив слайдов (сценарий) из Firebase в реальном времени
+            // Синхронизация слайдов из Firebase
             db.ref('slides').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     slides = data;
                 } else {
-                    // Если в базе пусто, записываем дефолтные слайды
                     db.ref('slides').set(defaultSlides);
                     slides = defaultSlides;
                 }
-                // Перерисовываем текущий вид при обновлении базы
                 if (isVoter) renderVoter();
                 else renderPresentation();
             });
 
             if (isVoter) {
-                // Слушаем смену текущего слайда для зрителя
+                // Слушаем смену слайда или статус тупика
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null) {
                         currentIdx = newIdx;
-                        hasVoted = false; // Разблокируем пульт для нового вопроса
+                        hasVoted = false;
+                        isGameOver = false;
                         renderVoter();
                     }
                 });
+
+                db.ref('isGameOver').on('value', (snapshot) => {
+                    isGameOver = !!snapshot.val();
+                    renderVoter();
+                });
             } else {
-                // Ведущий слушает голоса
                 db.ref('votes').on('value', (snapshot) => {
                     const data = snapshot.val() || { A: 0, B: 0 };
                     votesA = data.A || 0;
@@ -440,7 +459,11 @@
                 const el = document.getElementById(`${m}-view`);
                 if (el) el.classList.add('hidden');
             });
-            document.getElementById(`${mode}-view`).classList.remove('hidden');
+            if (mode !== 'gameover') {
+                document.getElementById(`${mode}-view`).classList.remove('hidden');
+            } else {
+                document.getElementById('gameover-view').classList.remove('hidden');
+            }
 
             ['presentation', 'editor', 'voter'].forEach(m => {
                 const btn = document.getElementById(`btn-mode-${m}`);
@@ -464,6 +487,10 @@
                 lastCheckpointIdx = currentIdx;
             }
 
+            db.ref('currentSlide').set(currentIdx);
+            db.ref('isGameOver').set(false);
+            db.ref('votes').set({ A: 0, B: 0 });
+
             document.getElementById('step-badge').innerText = currentIdx + 1;
             document.getElementById('chapter-era').innerText = slide.era || '';
             document.getElementById('chapter-title').innerText = slide.title;
@@ -471,11 +498,13 @@
             document.getElementById('chapter-image').src = slide.image;
 
             const isChoice = (slide.type === 'choice');
+            const isFinale = (slide.type === 'finale');
+
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
             document.getElementById('question-box').style.display = isChoice ? 'block' : 'none';
             document.getElementById('timer-box').style.display = isChoice ? 'block' : 'none';
             document.getElementById('choice-controls').style.display = isChoice ? 'block' : 'none';
-            document.getElementById('info-controls').style.display = isChoice ? 'none' : 'block';
+            document.getElementById('info-controls').style.display = (isChoice || isFinale) ? 'none' : 'block';
 
             if (isChoice) {
                 document.getElementById('question-text').innerText = slide.questionText;
@@ -491,7 +520,7 @@
             const listEl = document.getElementById('editor-list');
             listEl.innerHTML = slides.map((s, idx) => `
                 <div onclick="selectSlide(${idx})" class="p-2 rounded cursor-pointer text-xs transition ${idx === editingIdx ? 'bg-roman-red text-white font-bold' : 'bg-roman-stone/60 text-gray-300 hover:bg-roman-stone'}">
-                    #${idx + 1}: ${s.title}
+                    #${idx + 1} [${s.type || 'choice'}]: ${s.title}
                 </div>
             `).join('');
             loadSlideToForm(editingIdx);
@@ -559,7 +588,6 @@
             }
 
             slides[editingIdx] = s;
-            // Отправляем обновленный массив слайдов прямо в облако Firebase
             db.ref('slides').set(slides);
             renderEditor();
             alert('Слайд успешно сохранен и синхронизирован со зрителями!');
@@ -591,6 +619,17 @@
                 const reader = new FileReader();
                 reader.onload = e => {
                     document.getElementById('edit-image').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function uploadFailImage(evt) {
+            const file = evt.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('edit-fail-image').value = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
@@ -662,6 +701,9 @@
                 document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
                 document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
                 document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
+                
+                // Переводим всех в статус тупика
+                db.ref('isGameOver').set(true);
                 switchMode('gameover');
             } else {
                 nextSlide();
@@ -671,8 +713,8 @@
         function nextSlide() {
             if (currentIdx < slides.length - 1) {
                 currentIdx++;
-                // Отправляем в облако новый номер слайда и обнуляем голоса для него
                 db.ref('currentSlide').set(currentIdx);
+                db.ref('isGameOver').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
@@ -682,6 +724,7 @@
             if (currentIdx > 0) {
                 currentIdx--;
                 db.ref('currentSlide').set(currentIdx);
+                db.ref('isGameOver').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
@@ -690,6 +733,7 @@
         function restoreCheckpoint() {
             currentIdx = lastCheckpointIdx;
             db.ref('currentSlide').set(currentIdx);
+            db.ref('isGameOver').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
@@ -698,6 +742,7 @@
             currentIdx = 0;
             lastCheckpointIdx = 0;
             db.ref('currentSlide').set(currentIdx);
+            db.ref('isGameOver').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
@@ -710,6 +755,13 @@
             document.getElementById('voter-title').innerText = slide.title;
             const btnBox = document.getElementById('voter-buttons');
             const statusMsg = document.getElementById('voter-status-msg');
+
+            if (isGameOver) {
+                document.getElementById('voter-question').innerText = 'Сюжет зашел в тупик. Ожидайте возвращения лектора к развилке...';
+                btnBox.innerHTML = '<div class="text-xs text-red-400 py-4 font-bold uppercase">⚠️ Тупиковая ветка истории</div>';
+                statusMsg.classList.add('hidden');
+                return;
+            }
 
             if (slide.type === 'choice') {
                 document.getElementById('voter-question').innerText = slide.questionText;
@@ -727,15 +779,19 @@
                         </button>
                     `;
                 }
+            } else if (slide.type === 'finale') {
+                document.getElementById('voter-question').innerText = slide.storyText;
+                btnBox.innerHTML = '<div class="text-xs text-roman-gold py-4 font-bold uppercase">🎉 Лекция завершена. Спасибо за участие!</div>';
+                statusMsg.classList.add('hidden');
             } else {
-                document.getElementById('voter-question').innerText = 'Слушаем повествование лектора...';
+                document.getElementById('voter-question').innerText = slide.storyText || 'Слушаем повествование лектора...';
                 btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего вопроса</div>';
                 statusMsg.classList.add('hidden');
             }
         }
 
         function voterClick(type) {
-            if (hasVoted) return;
+            if (hasVoted || isGameOver) return;
             hasVoted = true;
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
             renderVoter();
