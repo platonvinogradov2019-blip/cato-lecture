@@ -4,117 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Интерактивная лекция: Жизнь Катона Старшего</title>
-    <!-- Tailwind CSS для стильного интерфейса -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons для иконок -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        .font-roman { font-family: 'Cinzel', serif; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+<body class="bg-gradient-to-br from-red-950 via-stone-900 to-amber-950 text-amber-50 min-h-screen flex flex-col">
 
-    <!-- Верхняя панель (скрывается автоматически в режиме ?mode=voter) -->
-    <header id="app-header" class="bg-slate-800 border-b border-slate-700 p-4 shadow-md">
+    <!-- Верхняя панель (автоматически удаляется в режиме ?mode=voter) -->
+    <header id="app-header" class="bg-red-900/80 border-b border-amber-600/40 p-4 shadow-2xl backdrop-blur-md">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <div class="bg-amber-600 p-2 rounded-lg text-white">
-                    <i data-lucide="scroll" class="w-6 h-6"></i>
+                <div class="bg-amber-500 p-2 rounded-xl text-red-950 font-bold shadow-lg">
+                    🏛️
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white">Катон Старший: Квест-Лекция</h1>
-                    <p class="text-xs text-slate-400">Интерактивный исторический симулятор</p>
+                    <h1 class="text-xl font-extrabold tracking-wide text-amber-300 font-roman">Катон Старший: Квест-Лекция</h1>
+                    <p class="text-xs text-amber-200/70">Интерактивный исторический симулятор</p>
                 </div>
             </div>
             
-            <!-- Переключатели режимов и управление -->
-            <div class="flex items-center space-x-2 bg-slate-900 p-1.5 rounded-xl border border-slate-700">
-                <button onclick="switchMode('presenter')" id="btn-mode-presenter" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-amber-600 text-white flex items-center gap-1.5">
-                    <i data-lucide="presentation" class="w-4 h-4"></i> Презентация
+            <!-- Переключатели режимов -->
+            <div class="flex items-center space-x-2 bg-red-950/80 p-1.5 rounded-xl border border-amber-600/30">
+                <button onclick="switchMode('presenter')" id="btn-mode-presenter" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-amber-500 text-red-950 shadow-md">
+                    📊 Презентация
                 </button>
-                <button onclick="switchMode('editor')" id="btn-mode-editor" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors text-slate-400 hover:text-white flex items-center gap-1.5">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i> Редактор
+                <button onclick="switchMode('editor')" id="btn-mode-editor" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100">
+                    ✏️ Редактор
                 </button>
-                <button onclick="switchMode('voter')" id="btn-mode-voter" class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors text-slate-400 hover:text-white flex items-center gap-1.5">
-                    <i data-lucide="smartphone" class="w-4 h-4"></i> Пульт зрителя
+                <button onclick="switchMode('voter')" id="btn-mode-voter" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-amber-200/70 hover:text-amber-100">
+                    📱 Пульт зрителя
                 </button>
             </div>
 
-            <!-- Доп. кнопки (QR-код, экспорт/импорт) -->
+            <!-- Кнопки управления -->
             <div class="flex items-center space-x-2">
-                <button onclick="openQrModal()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5">
-                    <i data-lucide="qr-code" class="w-4 h-4"></i> QR-код для зала
+                <button onclick="openQrModal()" class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all">
+                    📲 QR-код для зала
                 </button>
-                <button onclick="exportJson()" class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-slate-300 hover:text-white" title="Сохранить JSON">
-                    <i data-lucide="download" class="w-4 h-4"></i>
+                <button onclick="exportJson()" class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all" title="Сохранить JSON">
+                    💾 Сохранить
                 </button>
-                <label class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-slate-300 hover:text-white cursor-pointer" title="Загрузить JSON">
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                    <input type="file" id="import-file" accept=".json" class="hidden" onchange="importJson(event)">
+                <label class="bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 px-3 py-2 rounded-xl text-xs font-semibold text-amber-200 transition-all cursor-pointer">
+                    📂 Загрузить
+                    <input type="file" accept=".json" class="hidden" onchange="importJson(event)">
                 </label>
             </div>
         </div>
     </header>
 
-    <!-- Основной контент -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+    <!-- Основной блок -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
         
         <!-- РЕЖИМ ПРЕЗЕНТАТОРА -->
         <section id="view-presenter" class="space-y-6">
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                <!-- Прогресс и статус -->
-                <div class="flex justify-between items-center mb-4">
-                    <span id="pres-slide-badge" class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-semibold uppercase tracking-wider">Слайд 1 из 5</span>
-                    <div id="pres-timer-box" class="hidden items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full text-xs font-bold">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 animate-spin"></i> Голосование: <span id="pres-timer-val">15</span>с
+            <div class="bg-red-900/40 border-2 border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-lg relative overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <span id="pres-slide-badge" class="px-4 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold uppercase tracking-wider font-roman">
+                        Слайд 1 из 2
+                    </span>
+                    <div id="pres-timer-box" class="hidden items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-4 py-1.5 rounded-full text-xs font-bold">
+                        ⏱️ Голосование: <span id="pres-timer-val">15</span>с
                     </div>
                 </div>
 
-                <!-- Контент слайда -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     <div class="space-y-4">
-                        <h2 id="pres-title" class="text-2xl md:text-3xl font-bold text-white">Загрузка лекции...</h2>
-                        <p id="pres-content" class="text-slate-300 text-base leading-relaxed"></p>
-                        
-                        <!-- Обычные варианты выбора (если это слайд голосования) -->
-                        <div id="pres-options-container" class="space-y-3 pt-2"></div>
+                        <h2 id="pres-title" class="text-2xl md:text-4xl font-bold text-amber-300 font-roman"></h2>
+                        <p id="pres-content" class="text-amber-100/90 text-base md:text-lg leading-relaxed"></p>
+                        <div id="pres-options-container" class="space-y-3 pt-4"></div>
                     </div>
                     
                     <div class="flex justify-center">
-                        <img id="pres-image" src="" alt="Иллюстрация" class="max-h-80 rounded-xl object-cover shadow-lg border border-slate-700 hidden">
+                        <img id="pres-image" src="" alt="Иллюстрация" class="max-h-80 w-full object-cover rounded-2xl shadow-2xl border-2 border-amber-500/40 hidden">
                     </div>
                 </div>
 
-                <!-- Блок альтернативной концовки (Fast-Fail), если слайд завершился развилкой -->
-                <div id="pres-fastfail-box" class="mt-6 p-5 bg-red-950/40 border border-red-800/50 rounded-xl hidden">
-                    <div class="flex items-center gap-2 text-red-400 font-bold mb-2">
-                        <i data-lucide="alert-triangle" class="w-5 h-5"></i> Историческая развилка (Fast-Fail)
+                <!-- Блок Fast-Fail развилки -->
+                <div id="pres-fastfail-box" class="mt-6 p-6 bg-red-950/80 border-2 border-amber-500/60 rounded-2xl hidden">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold text-lg mb-3 font-roman">
+                        ⚠️ Исторический тупик (Fast-Fail)
                     </div>
-                    <p id="pres-fastfail-text" class="text-slate-200 text-sm mb-4"></p>
-                    <img id="pres-fastfail-image" src="" alt="Концовка" class="max-h-60 rounded-xl object-cover shadow-lg border border-red-900/50 hidden mb-4">
-                    <button onclick="resetLecture()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Начать лекцию заново
+                    <p id="pres-fastfail-text" class="text-amber-100 text-base mb-4"></p>
+                    <img id="pres-fastfail-image" src="" alt="Концовка" class="max-h-64 rounded-xl object-cover border border-amber-500/40 hidden mb-4">
+                    <button onclick="resetLecture()" class="bg-amber-500 hover:bg-amber-400 text-red-950 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm">
+                        🔄 Начать сначала
                     </button>
                 </div>
             </div>
 
-            <!-- Нижняя панель управления презентатора -->
-            <div class="flex flex-wrap justify-between items-center bg-slate-800/80 border border-slate-700/80 p-4 rounded-2xl gap-4">
-                <div class="flex items-center gap-2">
-                    <button onclick="prevSlide()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Назад
+            <!-- Управление слайдами -->
+            <div class="flex flex-wrap justify-between items-center bg-red-950/60 border border-amber-500/30 p-4 rounded-2xl gap-4 backdrop-blur-md">
+                <div class="flex items-center gap-3">
+                    <button onclick="prevSlide()" class="bg-red-900/60 hover:bg-red-800/80 text-amber-200 border border-amber-500/30 px-5 py-2.5 rounded-xl font-semibold transition-all">
+                        ← Назад
                     </button>
-                    <button onclick="nextSlide()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
-                        Далее <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <button onclick="nextSlide()" class="bg-amber-500 hover:bg-amber-400 text-red-950 font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg">
+                        Вперед →
                     </button>
                 </div>
 
-                <div id="voting-controls" class="flex items-center gap-3">
-                    <button onclick="startTimer()" id="btn-start-timer" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
-                        <i data-lucide="play" class="w-4 h-4"></i> Запустить голосование (15с)
+                <div id="voting-controls" class="flex items-center gap-4">
+                    <button onclick="startTimer()" id="btn-start-timer" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm">
+                        ▶️ Запустить таймер (15с)
                     </button>
-                    <span id="total-votes-badge" class="text-xs text-slate-400 bg-slate-900 px-3 py-2 rounded-xl border border-slate-700">Голосов: 0</span>
                 </div>
             </div>
         </section>
@@ -122,67 +117,63 @@
         <!-- РЕЖИМ РЕДАКТОРА -->
         <section id="view-editor" class="space-y-6 hidden">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="sliders" class="w-5 h-5 text-amber-500"></i> Конструктор слайдов и развилок
-                </h2>
-                <button onclick="addNewSlide()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Добавить слайд
+                <h2 class="text-2xl font-bold text-amber-300 font-roman">Редактор сценария</h2>
+                <button onclick="addNewSlide()" class="bg-amber-500 hover:bg-amber-400 text-red-950 font-bold px-4 py-2 rounded-xl text-sm transition-all">
+                    + Добавить слайд
                 </button>
             </div>
-            
             <div id="editor-slides-list" class="space-y-6"></div>
         </section>
 
-        <!-- РЕЖИМ ПУЛЬТА ЗРИТЕЛЯ -->
-        <section id="view-voter" class="space-y-6 max-w-md mx-auto py-6 hidden">
-            <div class="bg-slate-800 border border-slate-700 rounded-3xl p-6 shadow-2xl text-center space-y-6">
-                <div class="inline-flex p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
-                    <i data-lucide="smartphone" class="w-8 h-8"></i>
+        <!-- РЕЖИМ ЗРИТЕЛЯ -->
+        <section id="view-voter" class="space-y-6 max-w-md mx-auto py-4 hidden">
+            <div class="bg-red-900/50 border-2 border-amber-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-6 backdrop-blur-lg">
+                <div class="inline-flex p-4 bg-amber-500/20 text-amber-300 rounded-2xl border border-amber-500/40 text-2xl">
+                    🏛️
                 </div>
                 <div>
-                    <h2 id="voter-title" class="text-xl font-bold text-white mb-2">Ожидание вопроса...</h2>
-                    <p id="voter-content" class="text-slate-300 text-sm leading-relaxed"></p>
+                    <h2 id="voter-title" class="text-xl font-bold text-amber-300 font-roman mb-2"></h2>
+                    <p id="voter-content" class="text-amber-100/90 text-sm leading-relaxed"></p>
                 </div>
-
-                <div id="voter-buttons-container" class="space-y-3 pt-2">
-                    <!-- Кнопки голосования для зрителя -->
-                </div>
-
-                <div id="voter-status-msg" class="text-xs text-slate-400 py-2">
-                    Следите за большим экраном презентации
-                </div>
+                <div id="voter-buttons-container" class="space-y-3 pt-2"></div>
             </div>
         </section>
-
     </main>
 
     <!-- Модальное окно QR-кода -->
-    <div id="qr-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center">
+    <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-red-950 border-2 border-amber-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center">
             <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i data-lucide="qr-code" class="w-5 h-5 text-amber-500"></i> QR-код для зрителей
-                </h3>
-                <button onclick="closeQrModal()" class="text-slate-400 hover:text-white p-1">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <h3 class="text-lg font-bold text-amber-300 font-roman">QR-код для зрителей</h3>
+                <button onclick="closeQrModal()" class="text-amber-200/60 hover:text-amber-100 text-xl font-bold">✕</button>
             </div>
-            
-            <p class="text-xs text-slate-400">Укажите адрес вашего сайта (например, GitHub Pages или Netlify) с добавлением параметра <code class="text-amber-400">?mode=voter</code> на конце:</p>
-            
-            <input type="text" id="qr-url-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="https://yourname.github.io/repo/?mode=voter" oninput="updateQrCode()">
-            
-            <div class="bg-white p-4 rounded-2xl inline-block shadow-inner">
-                <div id="qrcode-render" class="w-48 h-48 flex items-center justify-center text-slate-900">
-                    <!-- Генерация QR -->
-                </div>
+            <p class="text-xs text-amber-200/70">Ссылка на пульт с добавленным <code class="text-amber-400 font-mono">?mode=voter</code>:</p>
+            <input type="text" id="qr-url-input" class="w-full bg-red-900/50 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-amber-100 focus:outline-none focus:border-amber-400" oninput="updateQrCode()">
+            <div class="bg-white p-4 rounded-2xl inline-block shadow-2xl">
+                <div id="qrcode-render" class="w-44 h-44 flex items-center justify-center"></div>
             </div>
-            
-            <p class="text-xs text-slate-500">Участники сканируют этот код и сразу попадают на пульт голосования.</p>
         </div>
     </div>
 
-    <!-- Библиотека генерации QR-кодов -->
-    <script src="https://cdnjs.cloudflare.com/ajax5/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // Дан
+        let lectureData = {
+            title: "Жизнь Катона Старшего",
+            slides: [
+                {
+                    id: 1,
+                    title: "Начало пути: Юность в Тускуле",
+                    content: "Марк Порций Катон родился в 234 г. до н.э. в плебейской семье. С каких шагов он решил начать свою публичную карьеру в древнем Риме?",
+                    image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80",
+                    isVote: true,
+                    options: [
+                        { text: "Отправиться в армию и сразиться с Ганнибалом", nextSlide: 2, fastFail: false },
+                        { text: "Открыть школу эллинской философии", nextSlide: null, fastFail: true, failText: "Катон открыто презирал изнеженность греческой философии! Римский сенат высмеял этот шаг, и его политическая карьера закончилась, так и не начавшись.", failImage: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80" }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Закалка в легионах",
+                    content: "Катон героически проявил себя в битве при Метавре. Его суровость и строгие ценности заслужили уважение солдат и сенаторов.",
+                    image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
+                    isVote: false,
