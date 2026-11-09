@@ -91,7 +91,7 @@
     <!-- MAIN CONTAINER -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- PRESENTATION VIEW -->
+        <!-- PRESENTATION VIEW (ПРОЕКТОР) -->
         <section id="presentation-view" class="space-y-6">
             <div class="roman-card rounded-xl p-4 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
@@ -101,15 +101,24 @@
                         <h2 id="chapter-title" class="font-cinzel text-lg text-white font-bold">...</h2>
                     </div>
                 </div>
+
+                <!-- КНОПКИ ПЕРЕКЛЮЧЕНИЯ НА ПРОЕКТОРЕ -->
+                <div class="flex gap-2">
+                    <button onclick="prevSlide()" class="bg-roman-stone hover:bg-roman-darkRed border border-roman-gold/50 text-roman-gold font-bold px-3 py-1.5 rounded text-xs uppercase">
+                        ← Назад
+                    </button>
+                    <button onclick="nextSlide()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase">
+                        Далее →
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
-                        <div id="image-container-wrapper" class="mb-4 flex justify-center items-center">
-                            <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" id="image-frame-box" style="width: 100%; height: 280px;">
-                                <img id="chapter-image" src="" class="w-full h-full object-contain">
-                            </div>
+                        <!-- БЛОК ДЛЯ 1 ИЛИ 2 КАРТИНОК -->
+                        <div id="image-container-wrapper" class="mb-4 grid grid-cols-1 gap-4">
+                            <!-- Картинки генерируются динамически -->
                         </div>
                         <p id="story-text" class="leading-relaxed font-serif" style="font-size: 1.125rem; font-family: 'Marcellus', serif;"></p>
                     </div>
@@ -273,23 +282,30 @@
                         <input type="text" id="edit-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-bold">
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки:</label>
-                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://...">
+                    <!-- КАРТИНКА 1 -->
+                    <div class="bg-roman-stone/40 p-3 rounded-lg border border-roman-gold/20 space-y-2">
+                        <div class="text-xs font-bold text-roman-gold uppercase">Первая картинка</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="edit-image" class="sm:col-span-2 bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white" placeholder="URL картинки #1">
+                            <input type="file" accept="image/*" onchange="uploadEditorImage(event, 1)" class="text-[10px] text-gray-300">
                         </div>
-                        <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Режим картинки:</label>
-                            <select id="edit-img-fit" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
-                                <option value="contain">Целиком (fit)</option>
-                                <option value="cover">Заполнение (crop)</option>
-                            </select>
+                    </div>
+
+                    <!-- КАРТИНКА 2 (ОПЦИОНАЛЬНО) -->
+                    <div class="bg-roman-stone/40 p-3 rounded-lg border border-roman-gold/20 space-y-2">
+                        <div class="text-xs font-bold text-roman-gold uppercase">Вторая картинка (необязательно)</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <input type="text" id="edit-image2" class="sm:col-span-2 bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white" placeholder="URL картинки #2">
+                            <input type="file" accept="image/*" onchange="uploadEditorImage(event, 2)" class="text-[10px] text-gray-300">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
-                        <input type="file" accept="image/*" onchange="uploadEditorImage(event)" class="text-xs text-gray-300">
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Режим отображения изображений:</label>
+                        <select id="edit-img-fit" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                            <option value="contain">Целиком (fit)</option>
+                            <option value="cover">Заполнение (crop)</option>
+                        </select>
                     </div>
 
                     <div>
@@ -366,6 +382,7 @@
                 era: '234 – 217 гг. до н.э.',
                 title: 'Юность в Тускуле и выбор пути',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
+                image2: '',
                 imgFit: 'contain',
                 storyText: 'Марк Порций родился в Тускуле в плебейской семье. Он унаследовал скромное сабинское имение и с юных лет работал на земле. Но начавшаяся Вторая Пуническая война требует решения.',
                 questionText: 'Какое направление выберет юный Катон?',
@@ -385,6 +402,7 @@
                 era: '214 – 204 гг. до н.э.',
                 title: 'Закалка в легионах',
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
+                image2: '',
                 imgFit: 'contain',
                 storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
                 timer: 20
@@ -395,6 +413,7 @@
                 era: 'Конец пути',
                 title: 'Триумф и Наследие Катона',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
+                image2: '',
                 imgFit: 'contain',
                 storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
             }
@@ -423,6 +442,13 @@
             } else {
                 switchMode('presentation');
             }
+
+            // Управление клавишами на проекторе
+            document.addEventListener('keydown', (e) => {
+                if (document.getElementById('presentation-view').classList.contains('hidden')) return;
+                if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+                if (e.key === 'ArrowLeft') prevSlide();
+            });
 
             db.ref('slides').on('value', (snapshot) => {
                 slides = snapshot.val() || defaultSlides;
@@ -547,10 +573,24 @@
             document.getElementById('chapter-title').innerText = slide.title;
             document.getElementById('story-text').innerText = slide.storyText;
             
-            const imgEl = document.getElementById('chapter-image');
-            imgEl.src = slide.image;
-            // Установка режима показа картинки (contain — целиком, cover — с обрезкой)
-            imgEl.className = `w-full h-full object-${slide.imgFit || 'contain'}`;
+            // РЕНДЕР 1 ИЛИ 2 КАРТИНОК
+            const imgWrapper = document.getElementById('image-container-wrapper');
+            const hasImg2 = !!slide.image2;
+            imgWrapper.className = `mb-4 grid ${hasImg2 ? 'grid-cols-2 gap-4' : 'grid-cols-1'} flex justify-center items-center`;
+            
+            let htmlImages = `
+                <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" style="width: 100%; height: 260px;">
+                    <img src="${slide.image}" class="w-full h-full object-${slide.imgFit || 'contain'}">
+                </div>
+            `;
+            if (hasImg2) {
+                htmlImages += `
+                    <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" style="width: 100%; height: 260px;">
+                        <img src="${slide.image2}" class="w-full h-full object-${slide.imgFit || 'contain'}">
+                    </div>
+                `;
+            }
+            imgWrapper.innerHTML = htmlImages;
 
             const isChoice = (slide.type === 'choice');
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
@@ -609,6 +649,7 @@
             document.getElementById('edit-timer').value = s.timer || 25;
             document.getElementById('edit-title').value = s.title || '';
             document.getElementById('edit-image').value = s.image || '';
+            document.getElementById('edit-image2').value = s.image2 || '';
             document.getElementById('edit-img-fit').value = s.imgFit || 'contain';
             document.getElementById('edit-story').value = s.storyText || '';
 
@@ -639,6 +680,7 @@
                 timer: parseInt(document.getElementById('edit-timer').value) || 25,
                 title: document.getElementById('edit-title').value,
                 image: document.getElementById('edit-image').value,
+                image2: document.getElementById('edit-image2').value,
                 imgFit: document.getElementById('edit-img-fit').value,
                 storyText: document.getElementById('edit-story').value
             };
@@ -673,11 +715,14 @@
             db.ref('slides').set(slides);
         }
 
-        function uploadEditorImage(evt) {
+        function uploadEditorImage(evt, imgNum) {
             const file = evt.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = e => document.getElementById('edit-image').value = e.target.result;
+                reader.onload = e => {
+                    const targetId = imgNum === 2 ? 'edit-image2' : 'edit-image';
+                    document.getElementById(targetId).value = e.target.result;
+                };
                 reader.readAsDataURL(file);
             }
         }
