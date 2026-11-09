@@ -182,8 +182,20 @@
 
                 <div class="space-y-2">
                     <button onclick="triggerStartTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
-                        ▶ Запустить таймер и голосование
+                        ▶ Запустить таймер
                     </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="triggerPauseTimer()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase shadow">
+                            ⏸ Пауза
+                        </button>
+                        <button onclick="triggerResumeTimer()" class="bg-blue-700 hover:bg-blue-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase shadow">
+                            ▶ Продолжить
+                        </button>
+                    </div>
+                    <button onclick="triggerStopTimer()" class="w-full bg-red-900 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-xl text-xs uppercase shadow">
+                        ⏹ Остановить таймер досрочно
+                    </button>
+                    
                     <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2.5 px-4 rounded-xl text-xs uppercase shadow">
                         👥 Симулировать голоса зала
                     </button>
@@ -232,7 +244,7 @@
             <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
                     <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария (PPT-стиль)</h2>
-                    <p class="text-xs text-gray-300">Настройка шрифтов, размеров текста и масштаба картинок</p>
+                    <p class="text-xs text-gray-300">Настройка индивидуального времени таймера и стилей</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
@@ -371,7 +383,7 @@
                                     <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка / GIF тупика:</label>
                                     <input type="text" id="edit-fail-image" placeholder="URL или .gif" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
                                     <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
-                                </div>
+                                }
                             </div>
                         </div>
                     </div>
@@ -441,7 +453,7 @@
                 title: 'Закалка в легионах',
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
                 storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
-                timer: 0,
+                timer: 20,
                 fontFamily: 'Marcellus',
                 fontSize: '18',
                 imgWidth: '100',
@@ -468,6 +480,7 @@
         let votesA = 0;
         let votesB = 0;
         let timerInt = null;
+        let remainingSeconds = 25;
         let hasVoted = false;
         let isGameOver = false;
         let isVotingActive = false;
@@ -506,13 +519,18 @@
                 }
             });
 
-            // Общая синхронизация текущего слайда для всех устройств
             db.ref('currentSlide').on('value', (snapshot) => {
                 const newIdx = snapshot.val();
                 if (newIdx !== null && newIdx !== currentIdx) {
                     currentIdx = newIdx;
                     hasVoted = false;
                     isGameOver = false;
+                    clearInterval(timerInt);
+                    if (slides[currentIdx]) {
+                        remainingSeconds = slides[currentIdx].timer || 25;
+                    }
+                    updateTimerDisplay(remainingSeconds);
+
                     if (mode === 'voter') renderVoter();
                     else if (mode === 'presenter') renderPresenterMobile();
                     else renderPresentation();
@@ -527,9 +545,21 @@
             db.ref('isVotingActive').on('value', (snapshot) => {
                 isVotingActive = !!snapshot.val();
                 if (mode === 'voter') renderVoter();
-                // Если таймер запущен из облака, запускаем его анимацию на проекторе
-                if (isVotingActive && mode !== 'voter' && mode !== 'presenter') {
-                    runClientTimer();
+            });
+
+            // Синхронизация статуса и оставшегося времени таймера из базы
+            db.ref('timerState').on('value', (snapshot) => {
+                const state = snapshot.val();
+                if (state) {
+                    remainingSeconds = state.timeLeft;
+                    updateTimerDisplay(remainingSeconds);
+                    if (state.status === 'running') {
+                        startLocalInterval(false); // Запуск без сброса секунд
+                    } else if (state.status === 'paused') {
+                        clearInterval(timerInt);
+                    } else if (state.status === 'stopped') {
+                        clearInterval(timerInt);
+                    }
                 }
             });
 
@@ -582,7 +612,9 @@
 
             if (slide.type === 'choice') {
                 lastCheckpointIdx = currentIdx;
+                remainingSeconds = slide.timer || 25;
             }
+            updateTimerDisplay(remainingSeconds);
 
             document.getElementById('step-badge').innerText = currentIdx + 1;
             document.getElementById('chapter-era').innerText = slide.era || '';
@@ -727,6 +759,7 @@
                 type: 'info',
                 title: 'Новый слайд',
                 storyText: 'Текст истории...',
+                timer: 25,
                 fontFamily: 'Marcellus',
                 fontSize: '18',
                 imgWidth: '100',
@@ -820,38 +853,68 @@
             document.getElementById('bar-b').style.width = `${pctB}%`;
         }
 
+        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ (СТАРТ, ПАУЗА, ВОЗОБНОВЛЕНИЕ) ---
         function triggerStartTimer() {
             db.ref('isVotingActive').set(true);
             db.ref('votes').set({ A: 0, B: 0 });
-            runClientTimer();
+            remainingSeconds = slides[currentIdx].timer || 25;
+            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
+            startLocalInterval(true);
         }
 
-        function runClientTimer() {
+        function triggerPauseTimer() {
+            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'paused' });
+        }
+
+        function triggerResumeTimer() {
+            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
+        }
+
+        function triggerStopTimer() {
+            db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
+            db.ref('isVotingActive').set(false);
             clearInterval(timerInt);
-            let sec = slides[currentIdx].timer || 25;
+            evaluateResult();
+        }
+
+        function startLocalInterval(reset) {
+            clearInterval(timerInt);
+            let totalTime = slides[currentIdx].timer || 25;
+            
             timerInt = setInterval(() => {
-                sec--;
-                const timerSecEl = document.getElementById('timer-sec');
-                const timerBarEl = document.getElementById('timer-bar');
-                if (timerSecEl) timerSecEl.innerText = sec;
-                if (timerBarEl) timerBarEl.style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
-                
-                if (sec <= 0) {
+                if (remainingSeconds > 0) {
+                    remainingSeconds--;
+                    db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
+                }
+                updateTimerDisplay(remainingSeconds);
+
+                if (remainingSeconds <= 0) {
                     clearInterval(timerInt);
                     db.ref('isVotingActive').set(false);
+                    db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
+                    evaluateResult();
                 }
             }, 1000);
         }
 
+        function updateTimerDisplay(sec) {
+            const timerSecEl = document.getElementById('timer-sec');
+            const timerBarEl = document.getElementById('timer-bar');
+            const total = slides[currentIdx]?.timer || 25;
+            if (timerSecEl) timerSecEl.innerText = sec < 10 ? '0' + sec : sec;
+            if (timerBarEl) timerBarEl.style.width = `${(sec / total) * 100}%`;
+        }
+
         function evaluateResult() {
             const slide = slides[currentIdx];
-            if (slide.type === 'choice' && votesB > votesA) {
+            if (slide && slide.type === 'choice' && votesB > votesA) {
                 document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
                 document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
                 document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
                 
                 db.ref('isGameOver').set(true);
                 db.ref('isVotingActive').set(false);
+                db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
                 switchMode('gameover');
             } else {
                 nextSlide();
@@ -864,6 +927,7 @@
                 db.ref('currentSlide').set(currentIdx);
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
+                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
                 db.ref('votes').set({ A: 0, B: 0 });
                 renderPresenterMobile();
             }
@@ -875,6 +939,7 @@
                 db.ref('currentSlide').set(currentIdx);
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
+                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
                 db.ref('votes').set({ A: 0, B: 0 });
                 renderPresenterMobile();
             }
@@ -885,6 +950,7 @@
             db.ref('currentSlide').set(currentIdx);
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(false);
+            db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
             db.ref('votes').set({ A: 0, B: 0 });
             renderPresenterMobile();
         }
@@ -895,6 +961,7 @@
             db.ref('currentSlide').set(currentIdx);
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(false);
+            db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
             db.ref('votes').set({ A: 0, B: 0 });
             renderPresenterMobile();
         }
