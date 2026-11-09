@@ -383,7 +383,7 @@
                                     <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка / GIF тупика:</label>
                                     <input type="text" id="edit-fail-image" placeholder="URL или .gif" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
                                     <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
-                                }
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -540,6 +540,15 @@
             db.ref('isGameOver').on('value', (snapshot) => {
                 isGameOver = !!snapshot.val();
                 if (mode === 'voter') renderVoter();
+                if (mode !== 'voter' && mode !== 'presenter') {
+                    if (isGameOver) {
+                        document.getElementById('presentation-view').classList.add('hidden');
+                        document.getElementById('gameover-view').classList.remove('hidden');
+                    } else {
+                        document.getElementById('gameover-view').classList.add('hidden');
+                        document.getElementById('presentation-view').classList.remove('hidden');
+                    }
+                }
             });
 
             db.ref('isVotingActive').on('value', (snapshot) => {
@@ -547,17 +556,15 @@
                 if (mode === 'voter') renderVoter();
             });
 
-            // Синхронизация статуса и оставшегося времени таймера из базы
+            // Синхронизация статуса таймера
             db.ref('timerState').on('value', (snapshot) => {
                 const state = snapshot.val();
                 if (state) {
                     remainingSeconds = state.timeLeft;
                     updateTimerDisplay(remainingSeconds);
                     if (state.status === 'running') {
-                        startLocalInterval(false); // Запуск без сброса секунд
-                    } else if (state.status === 'paused') {
-                        clearInterval(timerInt);
-                    } else if (state.status === 'stopped') {
+                        startLocalInterval(false);
+                    } else if (state.status === 'paused' || state.status === 'stopped') {
                         clearInterval(timerInt);
                     }
                 }
@@ -809,231 +816,3 @@
         function importJSON(evt) {
             const file = evt.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    try {
-                        slides = JSON.parse(e.target.result);
-                        db.ref('slides').set(slides);
-                        editingIdx = 0;
-                        renderEditor();
-                        alert('Сценарий загружен в облако!');
-                    } catch(err) { alert('Ошибка структуры JSON'); }
-                };
-                reader.readAsText(file);
-            }
-        }
-
-        function addPresenterVote(type) {
-            if (!isVotingActive) {
-                alert('Сначала запустите таймер голосования!');
-                return;
-            }
-            db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
-        }
-
-        function simulateVotes() {
-            if (!isVotingActive) {
-                alert('Сначала запустите таймер голосования!');
-                return;
-            }
-            const rA = Math.floor(Math.random() * 25) + 10;
-            const rB = Math.floor(Math.random() * 10);
-            db.ref('votes').set({ A: rA, B: rB });
-        }
-
-        function updateBars() {
-            const total = votesA + votesB || 1;
-            const pctA = Math.round((votesA / total) * 100);
-            const pctB = Math.round((votesB / total) * 100);
-            document.getElementById('pct-a').innerText = `${pctA}%`;
-            document.getElementById('pct-b').innerText = `${pctB}%`;
-            document.getElementById('count-a').innerText = votesA;
-            document.getElementById('count-b').innerText = votesB;
-            document.getElementById('bar-a').style.width = `${pctA}%`;
-            document.getElementById('bar-b').style.width = `${pctB}%`;
-        }
-
-        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ (СТАРТ, ПАУЗА, ВОЗОБНОВЛЕНИЕ) ---
-        function triggerStartTimer() {
-            db.ref('isVotingActive').set(true);
-            db.ref('votes').set({ A: 0, B: 0 });
-            remainingSeconds = slides[currentIdx].timer || 25;
-            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
-            startLocalInterval(true);
-        }
-
-        function triggerPauseTimer() {
-            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'paused' });
-        }
-
-        function triggerResumeTimer() {
-            db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
-        }
-
-        function triggerStopTimer() {
-            db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
-            db.ref('isVotingActive').set(false);
-            clearInterval(timerInt);
-            evaluateResult();
-        }
-
-        function startLocalInterval(reset) {
-            clearInterval(timerInt);
-            let totalTime = slides[currentIdx].timer || 25;
-            
-            timerInt = setInterval(() => {
-                if (remainingSeconds > 0) {
-                    remainingSeconds--;
-                    db.ref('timerState').set({ timeLeft: remainingSeconds, status: 'running' });
-                }
-                updateTimerDisplay(remainingSeconds);
-
-                if (remainingSeconds <= 0) {
-                    clearInterval(timerInt);
-                    db.ref('isVotingActive').set(false);
-                    db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
-                    evaluateResult();
-                }
-            }, 1000);
-        }
-
-        function updateTimerDisplay(sec) {
-            const timerSecEl = document.getElementById('timer-sec');
-            const timerBarEl = document.getElementById('timer-bar');
-            const total = slides[currentIdx]?.timer || 25;
-            if (timerSecEl) timerSecEl.innerText = sec < 10 ? '0' + sec : sec;
-            if (timerBarEl) timerBarEl.style.width = `${(sec / total) * 100}%`;
-        }
-
-        function evaluateResult() {
-            const slide = slides[currentIdx];
-            if (slide && slide.type === 'choice' && votesB > votesA) {
-                document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
-                document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
-                document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
-                
-                db.ref('isGameOver').set(true);
-                db.ref('isVotingActive').set(false);
-                db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
-                switchMode('gameover');
-            } else {
-                nextSlide();
-            }
-        }
-
-        function nextSlide() {
-            if (currentIdx < slides.length - 1) {
-                currentIdx++;
-                db.ref('currentSlide').set(currentIdx);
-                db.ref('isGameOver').set(false);
-                db.ref('isVotingActive').set(false);
-                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
-                db.ref('votes').set({ A: 0, B: 0 });
-                renderPresenterMobile();
-            }
-        }
-
-        function prevSlide() {
-            if (currentIdx > 0) {
-                currentIdx--;
-                db.ref('currentSlide').set(currentIdx);
-                db.ref('isGameOver').set(false);
-                db.ref('isVotingActive').set(false);
-                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
-                db.ref('votes').set({ A: 0, B: 0 });
-                renderPresenterMobile();
-            }
-        }
-
-        function restoreCheckpoint() {
-            currentIdx = lastCheckpointIdx;
-            db.ref('currentSlide').set(currentIdx);
-            db.ref('isGameOver').set(false);
-            db.ref('isVotingActive').set(false);
-            db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
-            db.ref('votes').set({ A: 0, B: 0 });
-            renderPresenterMobile();
-        }
-
-        function restartLecture() {
-            currentIdx = 0;
-            lastCheckpointIdx = 0;
-            db.ref('currentSlide').set(currentIdx);
-            db.ref('isGameOver').set(false);
-            db.ref('isVotingActive').set(false);
-            db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
-            db.ref('votes').set({ A: 0, B: 0 });
-            renderPresenterMobile();
-        }
-
-        // --- ЗРИТЕЛЬ ---
-        function renderVoter() {
-            const slide = slides[currentIdx];
-            if (!slide) return;
-
-            document.getElementById('voter-title').innerText = slide.title;
-            const btnBox = document.getElementById('voter-buttons');
-            const statusMsg = document.getElementById('voter-status-msg');
-
-            if (isGameOver) {
-                document.getElementById('voter-question').innerText = 'Сюжет зашел в тупик. Ожидайте возвращения лектора к развилке...';
-                btnBox.innerHTML = '<div class="text-xs text-red-400 py-4 font-bold uppercase">⚠️ Тупиковая ветка истории</div>';
-                statusMsg.classList.add('hidden');
-                return;
-            }
-
-            if (slide.type === 'choice') {
-                document.getElementById('voter-question').innerText = slide.questionText;
-                
-                if (!isVotingActive) {
-                    btnBox.innerHTML = '<div class="text-xs text-roman-gold py-6 font-bold uppercase animate-pulse">⏳ Ожидание старта голосования лектором...</div>';
-                    statusMsg.classList.add('hidden');
-                } else if (hasVoted) {
-                    btnBox.innerHTML = '';
-                    statusMsg.classList.remove('hidden');
-                } else {
-                    statusMsg.classList.add('hidden');
-                    btnBox.innerHTML = `
-                        <button onclick="voterClick('A')" class="w-full bg-roman-red border border-roman-gold text-white font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
-                            Вариант A: ${slide.optionA.title}
-                        </button>
-                        <button onclick="voterClick('B')" class="w-full bg-roman-stone border border-roman-gold text-roman-lightGold font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
-                            Вариант B: ${slide.optionB.title}
-                        </button>
-                    `;
-                }
-            } else if (slide.type === 'finale') {
-                document.getElementById('voter-question').innerText = slide.storyText;
-                btnBox.innerHTML = '<div class="text-xs text-roman-gold py-4 font-bold uppercase">🎉 Лекция завершена. Спасибо за участие!</div>';
-                statusMsg.classList.add('hidden');
-            } else {
-                document.getElementById('voter-question').innerText = slide.storyText || 'Слушаем повествование лектора...';
-                btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего вопроса</div>';
-                statusMsg.classList.add('hidden');
-            }
-        }
-
-        function voterClick(type) {
-            if (hasVoted || isGameOver || !isVotingActive) return;
-            hasVoted = true;
-            db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
-            renderVoter();
-        }
-
-        function toggleQRModal() {
-            const modal = document.getElementById('qr-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) renderQR();
-        }
-
-        function renderQR() {
-            const url = document.getElementById('qr-url-input').value;
-            const target = document.getElementById('qrcode-target');
-            target.innerHTML = '';
-            if (url && typeof QRCode !== 'undefined') {
-                new QRCode(target, { text: url, width: 175, height: 175, colorDark: "#4A0E0E", colorLight: "#ffffff" });
-            }
-        }
-    </script>
-</body>
-</html>
