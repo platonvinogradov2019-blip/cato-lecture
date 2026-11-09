@@ -77,6 +77,7 @@
                 <div class="bg-roman-stone border border-roman-gold/50 rounded-lg p-1 flex text-xs">
                     <button id="btn-mode-presentation" onclick="switchMode('presentation')" class="px-3 py-1.5 rounded font-bold uppercase bg-roman-red text-white">Проектор</button>
                     <button id="btn-mode-editor" onclick="switchMode('editor')" class="px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold">Редактор</button>
+                    <button id="btn-mode-presenter" onclick="switchMode('presenter')" class="px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold">Пульт ведущего</button>
                     <button id="btn-mode-voter" onclick="switchMode('voter')" class="px-3 py-1.5 rounded font-bold uppercase text-roman-lightGold">Зритель</button>
                 </div>
                 <button onclick="toggleQRModal()" class="bg-roman-gold text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase">
@@ -89,7 +90,7 @@
     <!-- MAIN CONTAINER -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- PRESENTATION VIEW -->
+        <!-- PRESENTATION VIEW (ПРОЕКТОР - БЕЗ КНОПОК УПРАВЛЕНИЯ) -->
         <section id="presentation-view" class="space-y-6">
             <div class="roman-card rounded-xl p-4 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
@@ -104,10 +105,13 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
-                        <div class="roman-frame mb-4 h-56 w-full rounded-lg overflow-hidden">
-                            <img id="chapter-image" src="" class="w-full h-full object-cover">
+                        <!-- Контейнер картинки с динамическим размером из редактора -->
+                        <div id="image-container-wrapper" class="mb-4 flex justify-center items-center">
+                            <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" id="image-frame-box" style="width: 100%; height: 224px;">
+                                <img id="chapter-image" src="" class="w-full h-full object-cover">
+                            </div>
                         </div>
-                        <p id="story-text" class="text-lg text-roman-parchment leading-relaxed font-serif"></p>
+                        <p id="story-text" class="leading-relaxed font-serif" style="font-size: 1.125rem; font-family: 'Marcellus', serif;"></p>
                     </div>
 
                     <div id="question-box" class="bg-roman-darkRed/60 border-l-4 border-roman-gold p-4 rounded-r-lg mt-4">
@@ -116,41 +120,15 @@
                     </div>
                 </div>
 
-                <!-- CONTROLS -->
+                <!-- ТАЙМЕР НА ПРОЕКТОРЕ (БЕЗ КНОПОК ПЕРЕКЛЮЧЕНИЯ) -->
                 <div class="roman-card rounded-xl p-6 flex flex-col justify-between border-t-4 border-t-roman-red">
-                    <div id="timer-box" class="text-center mb-4">
+                    <div id="timer-box" class="text-center my-auto">
                         <div class="text-xs uppercase text-roman-gold font-cinzel">Время на решение</div>
-                        <div id="timer-display" class="font-cinzel text-4xl font-black text-white my-2">00:<span id="timer-sec">25</span></div>
-                        <div class="w-full bg-roman-stone h-2 rounded-full overflow-hidden border border-roman-gold/30">
+                        <div id="timer-display" class="font-cinzel text-5xl font-black text-white my-3">00:<span id="timer-sec">25</span></div>
+                        <div class="w-full bg-roman-stone h-3 rounded-full overflow-hidden border border-roman-gold/30">
                             <div id="timer-bar" class="timer-bar h-full bg-roman-gold w-full"></div>
                         </div>
-                    </div>
-
-                    <div class="space-y-3 bg-roman-stone/90 p-4 rounded-lg border border-roman-gold/20">
-                        <div class="text-xs font-bold text-roman-gold uppercase text-center border-b border-roman-gold/20 pb-2">Управление ведущего</div>
-                        <div id="choice-controls" class="space-y-2">
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="addPresenterVote('A')" class="bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-xs">+1 за A</button>
-                                <button onclick="addPresenterVote('B')" class="bg-amber-800 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-xs">+1 за B</button>
-                            </div>
-                            <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs">
-                                <i class="fa-solid fa-play mr-1"></i> Запустить таймер и голосование
-                            </button>
-                            <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2 px-3 rounded text-xs">
-                                <i class="fa-solid fa-users-rays mr-1"></i> Симулировать голоса зала
-                            </button>
-                            <button onclick="evaluateResult()" class="w-full bg-roman-gold text-roman-darkRed font-cinzel font-bold py-2.5 px-3 rounded text-xs uppercase">
-                                Подвести итог и далее →
-                            </button>
-                        </div>
-                        <div id="info-controls" class="hidden space-y-2">
-                            <button onclick="prevSlide()" class="w-full bg-roman-stone border border-roman-gold/40 text-roman-lightGold font-cinzel font-bold py-2 px-3 rounded text-xs uppercase">
-                                ← Назад
-                            </button>
-                            <button onclick="nextSlide()" class="w-full bg-roman-gold text-roman-darkRed font-cinzel font-bold py-3 px-3 rounded text-sm uppercase">
-                                Следующий слайд →
-                            </button>
-                        </div>
+                        <p class="text-xs text-gray-400 mt-4">Управление лекции осуществляется с телефона ведущего.</p>
                     </div>
                 </div>
             </div>
@@ -185,6 +163,43 @@
             </div>
         </section>
 
+        <!-- PRESENTER MOBILE VIEW (ПУЛЬТ ВЕДУЩЕГО С ТЕЛЕФОНА) -->
+        <section id="presenter-view" class="hidden max-w-md mx-auto space-y-4">
+            <div class="roman-card rounded-3xl p-6 border-4 border-roman-gold space-y-4 text-center">
+                <h2 class="font-cinzel text-xl font-bold text-roman-gold">🎛️ Пульт управления лектора</h2>
+                <div class="bg-roman-stone/60 p-3 rounded-lg text-xs text-gray-300">
+                    Текущий слайд: <strong id="presenter-current-slide-num" class="text-white">1</strong>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="prevSlide()" class="bg-roman-stone border border-roman-gold/50 text-roman-lightGold font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
+                        ← Назад
+                    </button>
+                    <button onclick="nextSlide()" class="bg-roman-gold text-roman-darkRed font-cinzel font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
+                        Далее →
+                    </button>
+                </div>
+
+                <hr class="border-roman-gold/20 my-2">
+
+                <div class="space-y-2">
+                    <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
+                        ▶ Запустить таймер и голосование
+                    </button>
+                    <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2.5 px-4 rounded-xl text-xs uppercase shadow">
+                        👥 Симулировать голоса зала
+                    </button>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="addPresenterVote('A')" class="bg-emerald-900 text-white font-bold py-2 rounded text-xs">+1 за A</button>
+                        <button onclick="addPresenterVote('B')" class="bg-amber-900 text-white font-bold py-2 rounded text-xs">+1 за B</button>
+                    </div>
+                    <button onclick="evaluateResult()" class="w-full bg-amber-600 text-white font-cinzel font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
+                        ⚡ Подвести итог и продолжить
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- GAME OVER / FAST-FAIL -->
         <section id="gameover-view" class="hidden max-w-3xl mx-auto text-center space-y-6">
             <div class="roman-card rounded-2xl p-8 border-4 border-roman-red">
@@ -214,12 +229,12 @@
             </div>
         </section>
 
-        <!-- EDITOR VIEW -->
+        <!-- EDITOR VIEW (С ФУНКЦИЯМИ PPT: ШРИФТЫ, РАЗМЕРЫ, КАРТИНКИ) -->
         <section id="editor-view" class="hidden space-y-6">
             <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                    <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария лекции</h2>
-                    <p class="text-xs text-gray-300">Изменяйте порядок, картинки (включая GIF) и контент</p>
+                    <h2 class="font-cinzel text-xl text-roman-gold font-bold">Редактор сценария (PPT-стиль)</h2>
+                    <p class="text-xs text-gray-300">Настройка шрифтов, размеров текста и масштаба картинок</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="createNewSlide()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded text-xs uppercase shadow transition">
@@ -236,12 +251,12 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="roman-card rounded-xl p-4 max-h-[600px] overflow-y-auto space-y-2">
+                <div class="roman-card rounded-xl p-4 max-h-[650px] overflow-y-auto space-y-2">
                     <div class="text-xs font-cinzel text-roman-gold uppercase pb-2 border-b border-roman-gold/20">Список слайдов</div>
                     <div id="editor-list" class="space-y-2"></div>
                 </div>
 
-                <div class="lg:col-span-2 roman-card rounded-xl p-6 space-y-4">
+                <div class="lg:col-span-2 roman-card rounded-xl p-6 space-y-4 max-h-[650px] overflow-y-auto">
                     <div class="flex justify-between items-center border-b border-roman-gold/30 pb-3">
                         <h3 id="editor-form-title" class="font-cinzel text-lg font-bold text-white">Редактирование слайда</h3>
                         <button onclick="deleteCurrentSlide()" class="bg-red-950 text-red-300 border border-red-800 text-xs px-3 py-1.5 rounded">
@@ -271,6 +286,52 @@
                     <div>
                         <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Заголовок слайда:</label>
                         <input type="text" id="edit-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-bold">
+                    </div>
+
+                    <!-- ПАНЕЛЬ PPT НАСТРОЕК (ШРИФТЫ, РАЗМЕРЫ ТЕКСТА И КАРТИНОК) -->
+                    <div class="bg-roman-stone/80 p-3 rounded-lg border border-roman-gold/30 space-y-3">
+                        <div class="text-xs font-bold text-roman-gold uppercase tracking-wider">🎛️ Стили текста и картинки (PowerPoint стиль)</div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Шрифт текста:</label>
+                                <select id="edit-font-family" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                    <option value="Marcellus">Marcellus (Классический)</option>
+                                    <option value="Cinzel">Cinzel (Античный)</option>
+                                    <option value="sans-serif">Sans-Serif (Современный)</option>
+                                    <option value="serif">Serif (С засечками)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Размер текста (px):</label>
+                                <select id="edit-font-size" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                    <option value="16">16 px (Мелкий)</option>
+                                    <option value="18" selected>18 px (Стандарт)</option>
+                                    <option value="20">20 px (Крупный)</option>
+                                    <option value="24">24 px (Очень крупный)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Ширина картинки (%):</label>
+                                <select id="edit-img-width" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                    <option value="50">50% (Маленькая)</option>
+                                    <option value="75">75% (Средняя)</option>
+                                    <option value="100" selected>100% (На всю ширину)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Высота картинки (px):</label>
+                                <select id="edit-img-height" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
+                                    <option value="150">150 px</option>
+                                    <option value="224" selected>224 px (Стандарт)</option>
+                                    <option value="350">350 px (Высокая)</option>
+                                    <option value="450">450 px (Альбомная)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -333,9 +394,12 @@
     <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
         <div class="bg-roman-darkRed border-2 border-roman-gold rounded-3xl p-6 max-w-md w-full text-center space-y-4">
             <div class="flex justify-between items-center">
-                <h3 class="font-cinzel text-lg font-bold text-roman-gold">QR-код для зрителей</h3>
+                <h3 class="font-cinzel text-lg font-bold text-roman-gold">QR-код для пульта / зрителей</h3>
                 <button onclick="toggleQRModal()" class="text-white text-xl">✕</button>
             </div>
+            <p class="text-xs text-gray-300">Ссылка для пульта ведущего (откройте на своем смартфоне):</p>
+            <input type="text" id="qr-url-presenter" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white mb-2" readonly>
+            <p class="text-xs text-gray-300">Ссылка для зрителей:</p>
             <input type="text" id="qr-url-input" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" oninput="renderQR()">
             <div class="bg-white p-4 rounded-2xl inline-block">
                 <div id="qrcode-target" class="w-44 h-44 flex items-center justify-center"></div>
@@ -361,6 +425,10 @@
                 storyText: 'Марк Порций родился в Тускуле в плебейской семье. Он унаследовал скромное сабинское имение и с юных лет работал на земле. Но начавшаяся Вторая Пуническая война требует решения.',
                 questionText: 'Какое направление выберет юный Катон?',
                 timer: 25,
+                fontFamily: 'Marcellus',
+                fontSize: '18',
+                imgWidth: '100',
+                imgHeight: '224',
                 optionA: { title: 'Военная служба против Ганнибала', desc: 'Отправиться в легионы и проявить себя суровой дисциплиной.' },
                 optionB: { 
                     title: 'Изучение греческой философии', 
@@ -377,7 +445,11 @@
                 title: 'Закалка в легионах',
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
                 storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
-                timer: 0
+                timer: 0,
+                fontFamily: 'Marcellus',
+                fontSize: '18',
+                imgWidth: '100',
+                imgHeight: '224'
             },
             {
                 id: 3,
@@ -385,7 +457,11 @@
                 era: 'Конец пути',
                 title: 'Триумф и Наследие Катона',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
-                storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
+                storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.',
+                fontFamily: 'Marcellus',
+                fontSize: '18',
+                imgWidth: '100',
+                imgHeight: '224'
             }
         ];
 
@@ -398,16 +474,20 @@
         let timerInt = null;
         let hasVoted = false;
         let isGameOver = false;
-        let isVotingActive = false; // Флаг: активно ли голосование
+        let isVotingActive = false;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const isVoter = (urlParams.get('mode') === 'voter');
+            const mode = urlParams.get('mode');
 
-            if (isVoter) {
+            if (mode === 'voter') {
                 const header = document.getElementById('app-header');
                 if (header) header.remove();
                 switchMode('voter');
+            } else if (mode === 'presenter') {
+                const header = document.getElementById('app-header');
+                if (header) header.remove(); // Убираем хедер на пульте ведущего для максимального удобства с телефона
+                switchMode('presenter');
             } else {
                 switchMode('presentation');
             }
@@ -420,7 +500,8 @@
                     db.ref('slides').set(defaultSlides);
                     slides = defaultSlides;
                 }
-                if (isVoter) renderVoter();
+                if (mode === 'voter') renderVoter();
+                else if (mode === 'presenter') renderPresenterMobile();
                 else {
                     renderPresentation();
                     if (!document.getElementById('editor-view').classList.contains('hidden')) {
@@ -429,26 +510,26 @@
                 }
             });
 
-            if (isVoter) {
+            if (mode === 'voter' || mode === 'presenter') {
                 db.ref('currentSlide').on('value', (snapshot) => {
                     const newIdx = snapshot.val();
                     if (newIdx !== null) {
                         currentIdx = newIdx;
                         hasVoted = false;
                         isGameOver = false;
-                        renderVoter();
+                        if (mode === 'voter') renderVoter();
+                        if (mode === 'presenter') renderPresenterMobile();
                     }
                 });
 
                 db.ref('isGameOver').on('value', (snapshot) => {
                     isGameOver = !!snapshot.val();
-                    renderVoter();
+                    if (mode === 'voter') renderVoter();
                 });
 
-                // Слушаем статус активности голосования
                 db.ref('isVotingActive').on('value', (snapshot) => {
                     isVotingActive = !!snapshot.val();
-                    renderVoter();
+                    if (mode === 'voter') renderVoter();
                 });
             } else {
                 db.ref('votes').on('value', (snapshot) => {
@@ -457,24 +538,35 @@
                     votesB = data.B || 0;
                     updateBars();
                 });
+                db.ref('currentSlide').on('value', (snapshot) => {
+                    const newIdx = snapshot.val();
+                    if (newIdx !== null && newIdx !== currentIdx) {
+                        currentIdx = newIdx;
+                        renderPresentation();
+                    }
+                });
             }
 
+            const baseUrl = window.location.href.split('?')[0];
             const qrInput = document.getElementById('qr-url-input');
-            if (qrInput) qrInput.value = window.location.href.split('?')[0] + '?mode=voter';
+            const qrPresenterInput = document.getElementById('qr-url-presenter');
+            if (qrInput) qrInput.value = baseUrl + '?mode=voter';
+            if (qrPresenterInput) qrPresenterInput.value = baseUrl + '?mode=presenter';
         };
 
         function switchMode(mode) {
-            ['presentation', 'editor', 'gameover', 'voter'].forEach(m => {
+            ['presentation', 'editor', 'gameover', 'voter', 'presenter'].forEach(m => {
                 const el = document.getElementById(`${m}-view`);
                 if (el) el.classList.add('hidden');
             });
             if (mode !== 'gameover') {
-                document.getElementById(`${mode}-view`).classList.remove('hidden');
+                const targetView = document.getElementById(`${mode}-view`);
+                if (targetView) targetView.classList.remove('hidden');
             } else {
                 document.getElementById('gameover-view').classList.remove('hidden');
             }
 
-            ['presentation', 'editor', 'voter'].forEach(m => {
+            ['presentation', 'editor', 'presenter', 'voter'].forEach(m => {
                 const btn = document.getElementById(`btn-mode-${m}`);
                 if (btn) {
                     btn.className = (m === mode)
@@ -485,6 +577,7 @@
 
             if (mode === 'presentation') renderPresentation();
             if (mode === 'editor') renderEditor();
+            if (mode === 'presenter') renderPresenterMobile();
             if (mode === 'voter') renderVoter();
         }
 
@@ -496,15 +589,20 @@
                 lastCheckpointIdx = currentIdx;
             }
 
-            db.ref('currentSlide').set(currentIdx);
-            db.ref('isGameOver').set(false);
-            db.ref('isVotingActive').set(false); // Сбрасываем активность голосования при смене слайда
-            db.ref('votes').set({ A: 0, B: 0 });
-
             document.getElementById('step-badge').innerText = currentIdx + 1;
             document.getElementById('chapter-era').innerText = slide.era || '';
             document.getElementById('chapter-title').innerText = slide.title;
-            document.getElementById('story-text').innerText = slide.storyText;
+            
+            // Применяем настройки шрифтов и размера из PPT-стиля
+            const storyEl = document.getElementById('story-text');
+            storyEl.innerText = slide.storyText;
+            storyEl.style.fontFamily = slide.fontFamily || 'Marcellus';
+            storyEl.style.fontSize = (slide.fontSize || 18) + 'px';
+
+            // Применяем размер картинки
+            const imgBox = document.getElementById('image-frame-box');
+            imgBox.style.width = (slide.imgWidth || 100) + '%';
+            imgBox.style.height = (slide.imgHeight || 224) + 'px';
             document.getElementById('chapter-image').src = slide.image;
 
             const isChoice = (slide.type === 'choice');
@@ -513,8 +611,6 @@
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
             document.getElementById('question-box').style.display = isChoice ? 'block' : 'none';
             document.getElementById('timer-box').style.display = isChoice ? 'block' : 'none';
-            document.getElementById('choice-controls').style.display = isChoice ? 'block' : 'none';
-            document.getElementById('info-controls').style.display = (isChoice || isFinale) ? 'none' : 'block';
 
             if (isChoice) {
                 document.getElementById('question-text').innerText = slide.questionText;
@@ -523,6 +619,11 @@
                 document.getElementById('title-b').innerText = slide.optionB.title;
                 document.getElementById('desc-b').innerText = slide.optionB.desc;
             }
+        }
+
+        function renderPresenterMobile() {
+            const numEl = document.getElementById('presenter-current-slide-num');
+            if (numEl) numEl.innerText = (currentIdx + 1) + ' / ' + slides.length;
         }
 
         function renderEditor() {
@@ -569,6 +670,12 @@
             document.getElementById('edit-image').value = s.image || '';
             document.getElementById('edit-story').value = s.storyText || '';
 
+            // Загружаем настройки стиля текста и картинки
+            document.getElementById('edit-font-family').value = s.fontFamily || 'Marcellus';
+            document.getElementById('edit-font-size').value = s.fontSize || '18';
+            document.getElementById('edit-img-width').value = s.imgWidth || '100';
+            document.getElementById('edit-img-height').value = s.imgHeight || '224';
+
             if (s.type === 'choice') {
                 document.getElementById('edit-question').value = s.questionText || '';
                 document.getElementById('edit-opt-a-title').value = s.optionA?.title || '';
@@ -596,7 +703,11 @@
                 timer: parseInt(document.getElementById('edit-timer').value) || 25,
                 title: document.getElementById('edit-title').value,
                 image: document.getElementById('edit-image').value,
-                storyText: document.getElementById('edit-story').value
+                storyText: document.getElementById('edit-story').value,
+                fontFamily: document.getElementById('edit-font-family').value,
+                fontSize: document.getElementById('edit-font-size').value,
+                imgWidth: document.getElementById('edit-img-width').value,
+                imgHeight: document.getElementById('edit-img-height').value
             };
 
             if (type === 'choice') {
@@ -625,7 +736,11 @@
                 id: slides.length + 1,
                 type: 'info',
                 title: 'Новый слайд',
-                storyText: 'Текст истории...'
+                storyText: 'Текст истории...',
+                fontFamily: 'Marcellus',
+                fontSize: '18',
+                imgWidth: '100',
+                imgHeight: '224'
             });
             editingIdx = slides.length - 1;
             db.ref('slides').set(slides);
@@ -718,17 +833,20 @@
         function startTimer() {
             clearInterval(timerInt);
             isVotingActive = true;
-            db.ref('isVotingActive').set(true); // Разрешаем голосование зрителям в облаке
+            db.ref('isVotingActive').set(true);
 
             let sec = slides[currentIdx].timer || 25;
             timerInt = setInterval(() => {
                 sec--;
-                document.getElementById('timer-sec').innerText = sec;
-                document.getElementById('timer-bar').style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
+                const timerSecEl = document.getElementById('timer-sec');
+                const timerBarEl = document.getElementById('timer-bar');
+                if (timerSecEl) timerSecEl.innerText = sec;
+                if (timerBarEl) timerBarEl.style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
+                
                 if (sec <= 0) {
                     clearInterval(timerInt);
                     isVotingActive = false;
-                    db.ref('isVotingActive').set(false); // Запрещаем голосование после окончания времени
+                    db.ref('isVotingActive').set(false);
                     evaluateResult();
                 }
             }, 1000);
@@ -757,6 +875,7 @@
                 db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
+                renderPresenterMobile();
             }
         }
 
@@ -768,6 +887,7 @@
                 db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
+                renderPresenterMobile();
             }
         }
 
@@ -778,6 +898,7 @@
             db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
+            renderPresenterMobile();
         }
 
         function restartLecture() {
@@ -788,6 +909,7 @@
             db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
+            renderPresenterMobile();
         }
 
         // --- ЗРИТЕЛЬ ---
@@ -810,15 +932,12 @@
                 document.getElementById('voter-question').innerText = slide.questionText;
                 
                 if (!isVotingActive) {
-                    // Таймер еще не запущен
                     btnBox.innerHTML = '<div class="text-xs text-roman-gold py-6 font-bold uppercase animate-pulse">⏳ Ожидание старта голосования лектором...</div>';
                     statusMsg.classList.add('hidden');
                 } else if (hasVoted) {
-                    // Уже проголосовал
                     btnBox.innerHTML = '';
                     statusMsg.classList.remove('hidden');
                 } else {
-                    // Таймер идет, можно голосовать
                     statusMsg.classList.add('hidden');
                     btnBox.innerHTML = `
                         <button onclick="voterClick('A')" class="w-full bg-roman-red border border-roman-gold text-white font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
