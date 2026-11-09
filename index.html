@@ -102,7 +102,7 @@
                     </div>
                 </div>
 
-                <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ЛЕКТОРА НА ПРОЕКТОРЕ -->
+                <!-- ПОЛНАЯ ПАНЕЛЬ УПРАВЛЕНИЯ ЛЕКТОРА НА ПРОЕКТОРЕ -->
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="prevSlide()" class="bg-roman-stone hover:bg-roman-darkRed border border-roman-gold/50 text-roman-gold font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
                         ← Назад
@@ -110,12 +110,18 @@
                     <button onclick="nextSlide()" class="bg-roman-gold hover:bg-yellow-500 text-roman-darkRed font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
                         Далее →
                     </button>
-                    <span class="text-gray-500 mx-1">|</span>
+                    <span class="text-gray-600 mx-1">|</span>
                     <button onclick="triggerStartTimer()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
                         ▶ Таймер
                     </button>
+                    <button onclick="triggerPauseTimer()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold px-2.5 py-1.5 rounded text-xs uppercase shadow">
+                        ⏸ Пауза
+                    </button>
                     <button onclick="triggerStopTimer()" class="bg-red-900 hover:bg-red-800 text-white font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
-                        ⏹ Стоп/Итог
+                        ⏹ Итог
+                    </button>
+                    <button onclick="simulateVotes()" class="bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
+                        👥 Симул. голоса
                     </button>
                 </div>
             </div>
@@ -435,6 +441,7 @@
         let hasVoted = false;
         let isGameOver = false;
         let isVotingActive = false;
+        let activeGlobalMode = 'presentation';
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -450,7 +457,7 @@
 
             // Управление клавишами на проекторе
             document.addEventListener('keydown', (e) => {
-                if (document.getElementById('presentation-view').classList.contains('hidden')) return;
+                if (activeGlobalMode !== 'presentation') return;
                 if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
                 if (e.key === 'ArrowLeft') prevSlide();
             });
@@ -458,30 +465,30 @@
             db.ref('slides').on('value', (snapshot) => {
                 slides = snapshot.val() || defaultSlides;
                 if (!snapshot.exists()) db.ref('slides').set(defaultSlides);
-                refreshUI(mode);
+                refreshUI(activeGlobalMode);
             });
 
             db.ref('currentSlide').on('value', (snapshot) => {
                 const newIdx = snapshot.val();
-                if (newIdx !== null && newIdx !== currentIdx) {
+                if (newIdx !== null) {
                     currentIdx = newIdx;
                     hasVoted = false;
                     isGameOver = false;
                     clearInterval(timerInt);
                     if (slides[currentIdx]) remainingSeconds = slides[currentIdx].timer || 25;
                     updateTimerDisplay(remainingSeconds);
-                    refreshUI(mode);
+                    refreshUI(activeGlobalMode);
                 }
             });
 
             db.ref('isGameOver').on('value', (snapshot) => {
                 isGameOver = !!snapshot.val();
-                refreshUI(mode);
+                refreshUI(activeGlobalMode);
             });
 
             db.ref('isVotingActive').on('value', (snapshot) => {
                 isVotingActive = !!snapshot.val();
-                if (mode === 'voter') renderVoter();
+                if (activeGlobalMode === 'voter') renderVoter();
             });
 
             db.ref('timerState').on('value', (snapshot) => {
@@ -497,14 +504,12 @@
                 }
             });
 
-            if (mode !== 'voter' && mode !== 'presenter') {
-                db.ref('votes').on('value', (snapshot) => {
-                    const data = snapshot.val() || { A: 0, B: 0 };
-                    votesA = data.A || 0;
-                    votesB = data.B || 0;
-                    updateBars();
-                });
-            }
+            db.ref('votes').on('value', (snapshot) => {
+                const data = snapshot.val() || { A: 0, B: 0 };
+                votesA = data.A || 0;
+                votesB = data.B || 0;
+                updateBars();
+            });
 
             const baseUrl = window.location.href.split('?')[0];
             const qrInput = document.getElementById('qr-url-input');
@@ -540,6 +545,7 @@
         }
 
         function switchMode(mode) {
+            activeGlobalMode = mode;
             ['presentation', 'editor', 'gameover', 'voter', 'presenter'].forEach(m => {
                 const el = document.getElementById(`${m}-view`);
                 if (el) el.classList.add('hidden');
@@ -569,7 +575,6 @@
 
             if (slide.type === 'choice') {
                 lastCheckpointIdx = currentIdx;
-                remainingSeconds = slide.timer || 25;
             }
             updateTimerDisplay(remainingSeconds);
 
@@ -785,7 +790,7 @@
             document.getElementById('bar-b').style.width = `${pctB}%`;
         }
 
-        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ ---
+        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ И ПЕРЕКЛЮЧЕНИЕМ ---
         function triggerStartTimer() {
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(true);
@@ -851,22 +856,22 @@
 
         function nextSlide() {
             if (currentIdx < slides.length - 1) {
-                currentIdx++;
-                db.ref('currentSlide').set(currentIdx);
+                const nextIdx = currentIdx + 1;
+                db.ref('currentSlide').set(nextIdx);
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
-                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
+                db.ref('timerState').set({ timeLeft: slides[nextIdx]?.timer || 25, status: 'stopped' });
                 db.ref('votes').set({ A: 0, B: 0 });
             }
         }
 
         function prevSlide() {
             if (currentIdx > 0) {
-                currentIdx--;
-                db.ref('currentSlide').set(currentIdx);
+                const prevIdx = currentIdx - 1;
+                db.ref('currentSlide').set(prevIdx);
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
-                db.ref('timerState').set({ timeLeft: 25, status: 'stopped' });
+                db.ref('timerState').set({ timeLeft: slides[prevIdx]?.timer || 25, status: 'stopped' });
                 db.ref('votes').set({ A: 0, B: 0 });
             }
         }
