@@ -91,7 +91,7 @@
     <!-- MAIN CONTAINER -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- PRESENTATION VIEW (ПРОЕКТОР С ПОЛНЫМ УПРАВЛЕНИЕМ ЛЕКТОРА) -->
+        <!-- PRESENTATION VIEW (ПРОЕКТОР) -->
         <section id="presentation-view" class="space-y-6">
             <div class="roman-card rounded-xl p-4 flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center space-x-4">
@@ -102,7 +102,6 @@
                     </div>
                 </div>
 
-                <!-- ПОЛНАЯ ПАНЕЛЬ УПРАВЛЕНИЯ ЛЕКТОРА НА ПРОЕКТОРЕ -->
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="prevSlide()" class="bg-roman-stone hover:bg-roman-darkRed border border-roman-gold/50 text-roman-gold font-bold px-3 py-1.5 rounded text-xs uppercase shadow">
                         ← Назад
@@ -129,7 +128,6 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
-                        <!-- БЛОК ДЛЯ 1 ИЛИ 2 КАРТИНОК -->
                         <div id="image-container-wrapper" class="mb-4 grid grid-cols-1 gap-4"></div>
                         <p id="story-text" class="leading-relaxed font-serif" style="font-size: 1.125rem; font-family: 'Marcellus', serif;"></p>
                     </div>
@@ -215,7 +213,7 @@
             </div>
         </section>
 
-        <!-- GAME OVER VIEW -->
+        <!-- GAME OVER VIEW (АЛЬТЕРНАТИВНАЯ КОНЦОВКА) -->
         <section id="gameover-view" class="hidden max-w-3xl mx-auto text-center space-y-6">
             <div class="roman-card rounded-2xl p-8 border-4 border-roman-red">
                 <div class="roman-frame mb-4 h-64 w-full rounded-xl overflow-hidden flex items-center justify-center">
@@ -302,7 +300,7 @@
                         </div>
                     </div>
 
-                    <!-- КАРТИНКА 2 (ОПЦИОНАЛЬНО) -->
+                    <!-- КАРТИНКА 2 -->
                     <div class="bg-roman-stone/40 p-3 rounded-lg border border-roman-gold/20 space-y-2">
                         <div class="text-xs font-bold text-roman-gold uppercase">Вторая картинка (необязательно)</div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -324,31 +322,46 @@
                         <textarea id="edit-story" rows="3" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-serif"></textarea>
                     </div>
 
+                    <!-- НАСТРОЙКА РАЗВИЛКИ И ПОБЕДНОГО ВАРИАНТА -->
                     <div id="editor-choice-box" class="space-y-3 pt-3 border-t border-roman-gold/30">
                         <div>
                             <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Вопрос:</label>
                             <input type="text" id="edit-question" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
                         </div>
 
+                        <!-- НАСТРОЙКА: КАКОЙ ВАРИАНТ ВЕДЕТ ПО СЮЖЕТУ, А КАКОЙ В АЛЬТ-КОНЦОВКУ -->
+                        <div class="bg-roman-darkRed/80 p-3 rounded-lg border border-roman-gold/60">
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Правильный вариант (продолжает основной сюжет):</label>
+                            <select id="edit-winner-option" class="w-full bg-roman-stone border border-roman-gold/50 rounded p-2 text-xs text-white font-bold">
+                                <option value="A">Вариант A (Левый) — проигрыш B ведет в альт. концовку</option>
+                                <option value="B">Вариант B (Правый) — проигрыш A ведет в альт. концовку</option>
+                            </select>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div class="bg-roman-stone/60 p-3 rounded border border-emerald-900/50 space-y-2">
-                                <div class="text-xs font-bold text-emerald-400 uppercase">Вариант A</div>
+                                <div class="text-xs font-bold text-emerald-400 uppercase">Вариант A (Левый)</div>
                                 <input type="text" id="edit-opt-a-title" placeholder="Заголовок" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white">
                                 <textarea id="edit-opt-a-desc" rows="2" placeholder="Описание" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white"></textarea>
                             </div>
 
-                            <div class="bg-roman-stone/60 p-3 rounded border border-red-900/50 space-y-2">
-                                <div class="text-xs font-bold text-red-400 uppercase">Вариант B (Тупик)</div>
+                            <div class="bg-roman-stone/60 p-3 rounded border border-amber-900/50 space-y-2">
+                                <div class="text-xs font-bold text-amber-400 uppercase">Вариант B (Правый)</div>
                                 <input type="text" id="edit-opt-b-title" placeholder="Заголовок" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white">
                                 <textarea id="edit-opt-b-desc" rows="2" placeholder="Описание" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1 text-xs text-white"></textarea>
-                                <input type="text" id="edit-fail-title" placeholder="Заголовок поражения" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
-                                <textarea id="edit-fail-desc" rows="2" placeholder="Текст тупика" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
-                                
-                                <div>
-                                    <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка тупика:</label>
-                                    <input type="text" id="edit-fail-image" placeholder="URL" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
-                                    <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
-                                </div>
+                            </div>
+                        </div>
+
+                        <!-- НАСТРОЙКА АЛЬТЕРНАТИВНОЙ КОНЦОВКИ ДЛЯ ЭТОГО СЛАЙДА -->
+                        <div class="bg-roman-stone/80 p-3 rounded border border-red-900/60 space-y-2">
+                            <div class="text-xs font-bold text-red-400 uppercase">Альтернативная концовка (при проигрыше правильного варианта)</div>
+                            <input type="text" id="edit-fail-title" placeholder="Заголовок альтернативной концовки" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white">
+                            <textarea id="edit-fail-desc" rows="2" placeholder="Текст альтернативной концовки" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white"></textarea>
+                            
+                            <div>
+                                <label class="block text-[10px] text-red-300 font-bold uppercase mb-1">Картинка концовки:</label>
+                                <input type="text" id="edit-fail-image" placeholder="URL" class="w-full bg-roman-stone border border-red-900/50 rounded p-1 text-xs text-white mb-1">
+                                <input type="file" accept="image/*" onchange="uploadFailImage(event)" class="text-[10px] text-gray-400">
                             </div>
                         </div>
                     </div>
@@ -397,15 +410,13 @@
                 imgFit: 'contain',
                 storyText: 'Марк Порций родился в Тускуле в плебейской семье. Он унаследовал скромное сабинское имение и с юных лет работал на земле. Но начавшаяся Вторая Пуническая война требует решения.',
                 questionText: 'Какое направление выберет юный Катон?',
+                winnerOption: 'A', // A - правильный вариант, B - ведет в альт. концовку
                 timer: 25,
                 optionA: { title: 'Военная служба против Ганнибала', desc: 'Отправиться в легионы и проявить себя суровой дисциплиной.' },
-                optionB: { 
-                    title: 'Изучение греческой философии', 
-                    desc: 'Поехать в Афины и овладеть эллинистической культурой.',
-                    failTitle: 'Провал: Пренебрежение Рима',
-                    failDesc: 'Катон увлекся греческой изнеженностью! В традиционном Риме философия считалась опасной чуждой страстью. Сенаторы высмеяли молодой умишко, и карьера Катона закончилась.',
-                    failImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80'
-                }
+                optionB: { title: 'Изучение греческой философии', desc: 'Поехать в Афины и овладеть эллинистической культурой.' },
+                failTitle: 'Провал: Пренебрежение Рима',
+                failDesc: 'Катон увлекся греческой изнеженностью! В традиционном Риме философия считалась опасной страстью. Сенаторы высмеяли молодого человека, и его карьера закончилась.',
+                failImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=80'
             },
             {
                 id: 2,
@@ -426,7 +437,7 @@
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
                 image2: '',
                 imgFit: 'contain',
-                storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
+                storyText: 'Благодаря верности традициям предков, стойкости и суровому нраву, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
             }
         ];
 
@@ -455,7 +466,6 @@
                 switchMode('presentation');
             }
 
-            // Управление клавишами на проекторе
             document.addEventListener('keydown', (e) => {
                 if (activeGlobalMode !== 'presentation') return;
                 if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
@@ -528,10 +538,10 @@
                     document.getElementById('presentation-view').classList.add('hidden');
                     document.getElementById('gameover-view').classList.remove('hidden');
                     const slide = slides[currentIdx];
-                    if (slide && slide.type === 'choice' && slide.optionB) {
-                        document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
-                        document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
-                        document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
+                    if (slide && slide.type === 'choice') {
+                        document.getElementById('fail-title').innerText = slide.failTitle || 'Альтернативный вариант';
+                        document.getElementById('fail-desc').innerText = slide.failDesc || 'Сюжет пошел по альтернативному пути...';
+                        document.getElementById('fail-img').src = slide.failImage || slide.image;
                     }
                 } else {
                     document.getElementById('gameover-view').classList.add('hidden');
@@ -583,7 +593,6 @@
             document.getElementById('chapter-title').innerText = slide.title;
             document.getElementById('story-text').innerText = slide.storyText;
             
-            // РЕНДЕР 1 ИЛИ 2 КАРТИНОК
             const imgWrapper = document.getElementById('image-container-wrapper');
             const hasImg2 = !!slide.image2;
             imgWrapper.className = `mb-4 grid ${hasImg2 ? 'grid-cols-2 gap-4' : 'grid-cols-1'} flex justify-center items-center`;
@@ -665,13 +674,14 @@
 
             if (s.type === 'choice') {
                 document.getElementById('edit-question').value = s.questionText || '';
+                document.getElementById('edit-winner-option').value = s.winnerOption || 'A';
                 document.getElementById('edit-opt-a-title').value = s.optionA?.title || '';
                 document.getElementById('edit-opt-a-desc').value = s.optionA?.desc || '';
                 document.getElementById('edit-opt-b-title').value = s.optionB?.title || '';
                 document.getElementById('edit-opt-b-desc').value = s.optionB?.desc || '';
-                document.getElementById('edit-fail-title').value = s.optionB?.failTitle || '';
-                document.getElementById('edit-fail-desc').value = s.optionB?.failDesc || '';
-                document.getElementById('edit-fail-image').value = s.optionB?.failImage || '';
+                document.getElementById('edit-fail-title').value = s.failTitle || s.optionB?.failTitle || '';
+                document.getElementById('edit-fail-desc').value = s.failDesc || s.optionB?.failDesc || '';
+                document.getElementById('edit-fail-image').value = s.failImage || s.optionB?.failImage || '';
             }
             toggleEditorFields();
         }
@@ -697,14 +707,12 @@
 
             if (type === 'choice') {
                 s.questionText = document.getElementById('edit-question').value;
+                s.winnerOption = document.getElementById('edit-winner-option').value;
                 s.optionA = { title: document.getElementById('edit-opt-a-title').value, desc: document.getElementById('edit-opt-a-desc').value };
-                s.optionB = { 
-                    title: document.getElementById('edit-opt-b-title').value, 
-                    desc: document.getElementById('edit-opt-b-desc').value,
-                    failTitle: document.getElementById('edit-fail-title').value,
-                    failDesc: document.getElementById('edit-fail-desc').value,
-                    failImage: document.getElementById('edit-fail-image').value
-                };
+                s.optionB = { title: document.getElementById('edit-opt-b-title').value, desc: document.getElementById('edit-opt-b-desc').value };
+                s.failTitle = document.getElementById('edit-fail-title').value;
+                s.failDesc = document.getElementById('edit-fail-desc').value;
+                s.failImage = document.getElementById('edit-fail-image').value;
             }
 
             slides[editingIdx] = s;
@@ -713,7 +721,14 @@
         }
 
         function createNewSlide() {
-            slides.push({ id: slides.length + 1, type: 'info', title: 'Новый слайд', storyText: 'Текст...', timer: 25, imgFit: 'contain' });
+            slides.push({
+                id: slides.length + 1,
+                type: 'info',
+                title: 'Слайд ' + (slides.length + 1),
+                storyText: 'Повествование...',
+                timer: 25,
+                imgFit: 'contain'
+            });
             editingIdx = slides.length - 1;
             db.ref('slides').set(slides);
         }
@@ -775,7 +790,12 @@
 
         function simulateVotes() {
             if (!isVotingActive) return alert('Таймер не запущен!');
-            db.ref('votes').set({ A: 10, B: 25 });
+            const winner = slides[currentIdx]?.winnerOption || 'A';
+            if (winner === 'A') {
+                db.ref('votes').set({ A: 10, B: 25 }); // Проигрыш A -> альт. концовка
+            } else {
+                db.ref('votes').set({ A: 25, B: 10 }); // Проигрыш B -> альт. концовка
+            }
         }
 
         function updateBars() {
@@ -790,7 +810,7 @@
             document.getElementById('bar-b').style.width = `${pctB}%`;
         }
 
-        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ И ПЕРЕКЛЮЧЕНИЕМ ---
+        // --- УПРАВЛЕНИЕ ТАЙМЕРОМ И ПОДВЕДЕНИЕМ ИТОГОВ ---
         function triggerStartTimer() {
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(true);
@@ -839,15 +859,23 @@
             if (timerBarEl) timerBarEl.style.width = `${(sec / total) * 100}%`;
         }
 
+        // ДИНАМИЧЕСКАЯ ОЦЕНКА ПОБЕДНОГО ВАРИАНТА
         function evaluateResult() {
             const slide = slides[currentIdx];
             if (slide && slide.type === 'choice') {
-                if (votesB > votesA) {
+                const winnerOpt = slide.winnerOption || 'A';
+                let isWinner = false;
+
+                if (winnerOpt === 'A' && votesA >= votesB) isWinner = true;
+                if (winnerOpt === 'B' && votesB >= votesA) isWinner = true;
+
+                if (isWinner) {
+                    nextSlide(); // Победа правильного варианта -> продолжаем сюжет
+                } else {
+                    // Поражение -> переход в альтернативную концовку
                     db.ref('isGameOver').set(true);
                     db.ref('isVotingActive').set(false);
                     db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
-                } else {
-                    nextSlide();
                 }
             } else {
                 nextSlide();
@@ -906,7 +934,7 @@
 
             if (isGameOver) {
                 document.getElementById('voter-question').innerText = 'Сюжет зашел в тупик. Ожидайте возвращения лектора...';
-                btnBox.innerHTML = '<div class="text-xs text-red-400 py-4 font-bold uppercase">⚠️ Тупиковая ветка</div>';
+                btnBox.innerHTML = '<div class="text-xs text-red-400 py-4 font-bold uppercase">⚠️ Альтернативная ветка</div>';
                 statusMsg.classList.add('hidden');
                 return;
             }
@@ -932,7 +960,7 @@
                 btnBox.innerHTML = '<div class="text-xs text-roman-gold py-4 font-bold uppercase">🎉 Лекция завершена. Спасибо!</div>';
                 statusMsg.classList.add('hidden');
             } else {
-                document.getElementById('voter-question').innerText = slide.storyText || 'Слушаем повествование...';
+                document.getElementById('voter-question').innerText = slide.storyText;
                 btnBox.innerHTML = '<div class="text-xs text-gray-400 py-4">Ожидание следующего вопроса</div>';
                 statusMsg.classList.add('hidden');
             }
