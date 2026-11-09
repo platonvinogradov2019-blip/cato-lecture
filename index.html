@@ -59,6 +59,7 @@
         .roman-frame {
             border: 2px solid #D4AF37;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+            background-color: #12100E;
         }
         .timer-bar { transition: width 1s linear; }
     </style>
@@ -106,8 +107,8 @@
                 <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
                         <div id="image-container-wrapper" class="mb-4 flex justify-center items-center">
-                            <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" id="image-frame-box" style="width: 100%; height: 224px;">
-                                <img id="chapter-image" src="" class="w-full h-full object-cover">
+                            <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" id="image-frame-box" style="width: 100%; height: 280px;">
+                                <img id="chapter-image" src="" class="w-full h-full object-contain">
                             </div>
                         </div>
                         <p id="story-text" class="leading-relaxed font-serif" style="font-size: 1.125rem; font-family: 'Marcellus', serif;"></p>
@@ -197,8 +198,8 @@
         <!-- GAME OVER VIEW -->
         <section id="gameover-view" class="hidden max-w-3xl mx-auto text-center space-y-6">
             <div class="roman-card rounded-2xl p-8 border-4 border-roman-red">
-                <div class="roman-frame mb-4 h-52 w-full rounded-xl overflow-hidden">
-                    <img id="fail-img" src="" class="w-full h-full object-cover">
+                <div class="roman-frame mb-4 h-64 w-full rounded-xl overflow-hidden flex items-center justify-center">
+                    <img id="fail-img" src="" class="w-full h-full object-contain">
                 </div>
                 <h2 id="fail-title" class="font-cinzel text-2xl font-black text-roman-gold mb-2"></h2>
                 <p id="fail-desc" class="text-base text-roman-parchment leading-relaxed mb-6 font-serif"></p>
@@ -272,15 +273,23 @@
                         <input type="text" id="edit-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-bold">
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
                             <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки:</label>
                             <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://...">
                         </div>
                         <div>
-                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Файл с ПК:</label>
-                            <input type="file" accept="image/*" onchange="uploadEditorImage(event)" class="text-xs text-gray-300 mt-1">
+                            <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Режим картинки:</label>
+                            <select id="edit-img-fit" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white">
+                                <option value="contain">Целиком (fit)</option>
+                                <option value="cover">Заполнение (crop)</option>
+                            </select>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл с ПК:</label>
+                        <input type="file" accept="image/*" onchange="uploadEditorImage(event)" class="text-xs text-gray-300">
                     </div>
 
                     <div>
@@ -357,6 +366,7 @@
                 era: '234 – 217 гг. до н.э.',
                 title: 'Юность в Тускуле и выбор пути',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
+                imgFit: 'contain',
                 storyText: 'Марк Порций родился в Тускуле в плебейской семье. Он унаследовал скромное сабинское имение и с юных лет работал на земле. Но начавшаяся Вторая Пуническая война требует решения.',
                 questionText: 'Какое направление выберет юный Катон?',
                 timer: 25,
@@ -375,6 +385,7 @@
                 era: '214 – 204 гг. до н.э.',
                 title: 'Закалка в легионах',
                 image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80',
+                imgFit: 'contain',
                 storyText: 'Катон проявил исключительное мужество при осаде Тарента и в решающей битве при Метавре. Его суровость, отказ от роскоши и личная храбрость заслужили уважение солдат и сенаторов.',
                 timer: 20
             },
@@ -384,6 +395,7 @@
                 era: 'Конец пути',
                 title: 'Триумф и Наследие Катона',
                 image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80',
+                imgFit: 'contain',
                 storyText: 'Благодаря верности традициям предков, стойкости и суровому нрапу, Марк Порций Катон стал великим цензором и образцом римской добродетели.'
             }
         ];
@@ -534,7 +546,11 @@
             document.getElementById('chapter-era').innerText = slide.era || '';
             document.getElementById('chapter-title').innerText = slide.title;
             document.getElementById('story-text').innerText = slide.storyText;
-            document.getElementById('chapter-image').src = slide.image;
+            
+            const imgEl = document.getElementById('chapter-image');
+            imgEl.src = slide.image;
+            // Установка режима показа картинки (contain — целиком, cover — с обрезкой)
+            imgEl.className = `w-full h-full object-${slide.imgFit || 'contain'}`;
 
             const isChoice = (slide.type === 'choice');
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
@@ -593,6 +609,7 @@
             document.getElementById('edit-timer').value = s.timer || 25;
             document.getElementById('edit-title').value = s.title || '';
             document.getElementById('edit-image').value = s.image || '';
+            document.getElementById('edit-img-fit').value = s.imgFit || 'contain';
             document.getElementById('edit-story').value = s.storyText || '';
 
             if (s.type === 'choice') {
@@ -622,6 +639,7 @@
                 timer: parseInt(document.getElementById('edit-timer').value) || 25,
                 title: document.getElementById('edit-title').value,
                 image: document.getElementById('edit-image').value,
+                imgFit: document.getElementById('edit-img-fit').value,
                 storyText: document.getElementById('edit-story').value
             };
 
@@ -643,7 +661,7 @@
         }
 
         function createNewSlide() {
-            slides.push({ id: slides.length + 1, type: 'info', title: 'Новый слайд', storyText: 'Текст...', timer: 25 });
+            slides.push({ id: slides.length + 1, type: 'info', title: 'Новый слайд', storyText: 'Текст...', timer: 25, imgFit: 'contain' });
             editingIdx = slides.length - 1;
             db.ref('slides').set(slides);
         }
@@ -702,7 +720,6 @@
 
         function simulateVotes() {
             if (!isVotingActive) return alert('Таймер не запущен!');
-            // Симулируем победу B (альт. концовка)
             db.ref('votes').set({ A: 10, B: 25 });
         }
 
