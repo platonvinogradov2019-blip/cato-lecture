@@ -471,12 +471,20 @@
         };
 
         function refreshUI(mode) {
-            if (mode === 'voter') renderVoter();
-            else if (mode === 'presenter') renderPresenterMobile();
-            else {
+            if (mode === 'voter') {
+                renderVoter();
+            } else if (mode === 'presenter') {
+                renderPresenterMobile();
+            } else {
                 if (isGameOver) {
                     document.getElementById('presentation-view').classList.add('hidden');
                     document.getElementById('gameover-view').classList.remove('hidden');
+                    const slide = slides[currentIdx];
+                    if (slide && slide.type === 'choice' && slide.optionB) {
+                        document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
+                        document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
+                        document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
+                    }
                 } else {
                     document.getElementById('gameover-view').classList.add('hidden');
                     document.getElementById('presentation-view').classList.remove('hidden');
@@ -694,7 +702,8 @@
 
         function simulateVotes() {
             if (!isVotingActive) return alert('Таймер не запущен!');
-            db.ref('votes').set({ A: Math.floor(Math.random() * 25) + 10, B: Math.floor(Math.random() * 30) + 15 });
+            // Симулируем победу B (альт. концовка)
+            db.ref('votes').set({ A: 10, B: 25 });
         }
 
         function updateBars() {
@@ -711,6 +720,7 @@
 
         // --- УПРАВЛЕНИЕ ТАЙМЕРОМ ---
         function triggerStartTimer() {
+            db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(true);
             db.ref('votes').set({ A: 0, B: 0 });
             remainingSeconds = slides[currentIdx].timer || 25;
@@ -761,9 +771,6 @@
             const slide = slides[currentIdx];
             if (slide && slide.type === 'choice') {
                 if (votesB > votesA) {
-                    document.getElementById('fail-title').innerText = slide.optionB.failTitle || 'Развязка';
-                    document.getElementById('fail-desc').innerText = slide.optionB.failDesc || 'Тупиковый путь...';
-                    document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
                     db.ref('isGameOver').set(true);
                     db.ref('isVotingActive').set(false);
                     db.ref('timerState').set({ timeLeft: 0, status: 'stopped' });
