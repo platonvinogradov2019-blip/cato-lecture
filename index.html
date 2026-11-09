@@ -90,7 +90,7 @@
     <!-- MAIN CONTAINER -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-        <!-- PRESENTATION VIEW (ПРОЕКТОР - БЕЗ КНОПОК УПРАВЛЕНИЯ) -->
+        <!-- PRESENTATION VIEW (ПРОЕКТОР) -->
         <section id="presentation-view" class="space-y-6">
             <div class="roman-card rounded-xl p-4 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
@@ -105,7 +105,6 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 roman-card rounded-xl p-6 border-t-4 border-t-roman-gold flex flex-col justify-between">
                     <div>
-                        <!-- Контейнер картинки с динамическим размером из редактора -->
                         <div id="image-container-wrapper" class="mb-4 flex justify-center items-center">
                             <div class="roman-frame rounded-lg overflow-hidden flex items-center justify-center" id="image-frame-box" style="width: 100%; height: 224px;">
                                 <img id="chapter-image" src="" class="w-full h-full object-cover">
@@ -120,7 +119,7 @@
                     </div>
                 </div>
 
-                <!-- ТАЙМЕР НА ПРОЕКТОРЕ (БЕЗ КНОПОК ПЕРЕКЛЮЧЕНИЯ) -->
+                <!-- ТАЙМЕР НА ПРОЕКТОРЕ -->
                 <div class="roman-card rounded-xl p-6 flex flex-col justify-between border-t-4 border-t-roman-red">
                     <div id="timer-box" class="text-center my-auto">
                         <div class="text-xs uppercase text-roman-gold font-cinzel">Время на решение</div>
@@ -128,7 +127,6 @@
                         <div class="w-full bg-roman-stone h-3 rounded-full overflow-hidden border border-roman-gold/30">
                             <div id="timer-bar" class="timer-bar h-full bg-roman-gold w-full"></div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-4">Управление лекции осуществляется с телефона ведущего.</p>
                     </div>
                 </div>
             </div>
@@ -183,7 +181,7 @@
                 <hr class="border-roman-gold/20 my-2">
 
                 <div class="space-y-2">
-                    <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
+                    <button onclick="triggerStartTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase shadow">
                         ▶ Запустить таймер и голосование
                     </button>
                     <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2.5 px-4 rounded-xl text-xs uppercase shadow">
@@ -229,7 +227,7 @@
             </div>
         </section>
 
-        <!-- EDITOR VIEW (С ФУНКЦИЯМИ PPT: ШРИФТЫ, РАЗМЕРЫ, КАРТИНКИ) -->
+        <!-- EDITOR VIEW -->
         <section id="editor-view" class="hidden space-y-6">
             <div class="roman-card rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
@@ -288,9 +286,8 @@
                         <input type="text" id="edit-title" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white font-bold">
                     </div>
 
-                    <!-- ПАНЕЛЬ PPT НАСТРОЕК (ШРИФТЫ, РАЗМЕРЫ ТЕКСТА И КАРТИНОК) -->
                     <div class="bg-roman-stone/80 p-3 rounded-lg border border-roman-gold/30 space-y-3">
-                        <div class="text-xs font-bold text-roman-gold uppercase tracking-wider">🎛️ Стили текста и картинки (PowerPoint стиль)</div>
+                        <div class="text-xs font-bold text-roman-gold uppercase tracking-wider">🎛️ Стили текста и картинки</div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
@@ -305,10 +302,10 @@
                             <div>
                                 <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Размер текста (px):</label>
                                 <select id="edit-font-size" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
-                                    <option value="16">16 px (Мелкий)</option>
-                                    <option value="18" selected>18 px (Стандарт)</option>
-                                    <option value="20">20 px (Крупный)</option>
-                                    <option value="24">24 px (Очень крупный)</option>
+                                    <option value="16">16 px</option>
+                                    <option value="18" selected>18 px</option>
+                                    <option value="20">20 px</option>
+                                    <option value="24">24 px</option>
                                 </select>
                             </div>
                         </div>
@@ -317,18 +314,18 @@
                             <div>
                                 <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Ширина картинки (%):</label>
                                 <select id="edit-img-width" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
-                                    <option value="50">50% (Маленькая)</option>
-                                    <option value="75">75% (Средняя)</option>
-                                    <option value="100" selected>100% (На всю ширину)</option>
+                                    <option value="50">50%</option>
+                                    <option value="75">75%</option>
+                                    <option value="100" selected>100%</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] text-gray-300 font-bold mb-1 uppercase">Высота картинки (px):</label>
                                 <select id="edit-img-height" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-1.5 text-xs text-white">
                                     <option value="150">150 px</option>
-                                    <option value="224" selected>224 px (Стандарт)</option>
-                                    <option value="350">350 px (Высокая)</option>
-                                    <option value="450">450 px (Альбомная)</option>
+                                    <option value="224" selected>224 px</option>
+                                    <option value="350">350 px</option>
+                                    <option value="450">450 px</option>
                                 </select>
                             </div>
                         </div>
@@ -337,7 +334,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">URL Картинки или GIF:</label>
-                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://... или ссылка на .gif">
+                            <input type="text" id="edit-image" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" placeholder="https://...">
                         </div>
                         <div>
                             <label class="block text-xs text-roman-gold font-bold mb-1 uppercase">Загрузить файл / GIF с ПК:</label>
@@ -397,7 +394,7 @@
                 <h3 class="font-cinzel text-lg font-bold text-roman-gold">QR-код для пульта / зрителей</h3>
                 <button onclick="toggleQRModal()" class="text-white text-xl">✕</button>
             </div>
-            <p class="text-xs text-gray-300">Ссылка для пульта ведущего (откройте на своем смартфоне):</p>
+            <p class="text-xs text-gray-300">Ссылка для пульта ведущего:</p>
             <input type="text" id="qr-url-presenter" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white mb-2" readonly>
             <p class="text-xs text-gray-300">Ссылка для зрителей:</p>
             <input type="text" id="qr-url-input" class="w-full bg-roman-stone border border-roman-gold/40 rounded p-2 text-xs text-white" oninput="renderQR()">
@@ -408,7 +405,6 @@
     </div>
 
     <script>
-        // Инициализация Firebase
         const firebaseConfig = {
             databaseURL: "https://cato-lecture-default-rtdb.firebaseio.com"
         };
@@ -486,7 +482,7 @@
                 switchMode('voter');
             } else if (mode === 'presenter') {
                 const header = document.getElementById('app-header');
-                if (header) header.remove(); // Убираем хедер на пульте ведущего для максимального удобства с телефона
+                if (header) header.remove();
                 switchMode('presenter');
             } else {
                 switchMode('presentation');
@@ -510,40 +506,39 @@
                 }
             });
 
-            if (mode === 'voter' || mode === 'presenter') {
-                db.ref('currentSlide').on('value', (snapshot) => {
-                    const newIdx = snapshot.val();
-                    if (newIdx !== null) {
-                        currentIdx = newIdx;
-                        hasVoted = false;
-                        isGameOver = false;
-                        if (mode === 'voter') renderVoter();
-                        if (mode === 'presenter') renderPresenterMobile();
-                    }
-                });
-
-                db.ref('isGameOver').on('value', (snapshot) => {
-                    isGameOver = !!snapshot.val();
+            // Общая синхронизация текущего слайда для всех устройств
+            db.ref('currentSlide').on('value', (snapshot) => {
+                const newIdx = snapshot.val();
+                if (newIdx !== null && newIdx !== currentIdx) {
+                    currentIdx = newIdx;
+                    hasVoted = false;
+                    isGameOver = false;
                     if (mode === 'voter') renderVoter();
-                });
+                    else if (mode === 'presenter') renderPresenterMobile();
+                    else renderPresentation();
+                }
+            });
 
-                db.ref('isVotingActive').on('value', (snapshot) => {
-                    isVotingActive = !!snapshot.val();
-                    if (mode === 'voter') renderVoter();
-                });
-            } else {
+            db.ref('isGameOver').on('value', (snapshot) => {
+                isGameOver = !!snapshot.val();
+                if (mode === 'voter') renderVoter();
+            });
+
+            db.ref('isVotingActive').on('value', (snapshot) => {
+                isVotingActive = !!snapshot.val();
+                if (mode === 'voter') renderVoter();
+                // Если таймер запущен из облака, запускаем его анимацию на проекторе
+                if (isVotingActive && mode !== 'voter' && mode !== 'presenter') {
+                    runClientTimer();
+                }
+            });
+
+            if (mode !== 'voter' && mode !== 'presenter') {
                 db.ref('votes').on('value', (snapshot) => {
                     const data = snapshot.val() || { A: 0, B: 0 };
                     votesA = data.A || 0;
                     votesB = data.B || 0;
                     updateBars();
-                });
-                db.ref('currentSlide').on('value', (snapshot) => {
-                    const newIdx = snapshot.val();
-                    if (newIdx !== null && newIdx !== currentIdx) {
-                        currentIdx = newIdx;
-                        renderPresentation();
-                    }
                 });
             }
 
@@ -593,21 +588,17 @@
             document.getElementById('chapter-era').innerText = slide.era || '';
             document.getElementById('chapter-title').innerText = slide.title;
             
-            // Применяем настройки шрифтов и размера из PPT-стиля
             const storyEl = document.getElementById('story-text');
             storyEl.innerText = slide.storyText;
             storyEl.style.fontFamily = slide.fontFamily || 'Marcellus';
             storyEl.style.fontSize = (slide.fontSize || 18) + 'px';
 
-            // Применяем размер картинки
             const imgBox = document.getElementById('image-frame-box');
             imgBox.style.width = (slide.imgWidth || 100) + '%';
             imgBox.style.height = (slide.imgHeight || 224) + 'px';
             document.getElementById('chapter-image').src = slide.image;
 
             const isChoice = (slide.type === 'choice');
-            const isFinale = (slide.type === 'finale');
-
             document.getElementById('choices-container').style.display = isChoice ? 'grid' : 'none';
             document.getElementById('question-box').style.display = isChoice ? 'block' : 'none';
             document.getElementById('timer-box').style.display = isChoice ? 'block' : 'none';
@@ -670,7 +661,6 @@
             document.getElementById('edit-image').value = s.image || '';
             document.getElementById('edit-story').value = s.storyText || '';
 
-            // Загружаем настройки стиля текста и картинки
             document.getElementById('edit-font-family').value = s.fontFamily || 'Marcellus';
             document.getElementById('edit-font-size').value = s.fontSize || '18';
             document.getElementById('edit-img-width').value = s.imgWidth || '100';
@@ -830,11 +820,14 @@
             document.getElementById('bar-b').style.width = `${pctB}%`;
         }
 
-        function startTimer() {
-            clearInterval(timerInt);
-            isVotingActive = true;
+        function triggerStartTimer() {
             db.ref('isVotingActive').set(true);
+            db.ref('votes').set({ A: 0, B: 0 });
+            runClientTimer();
+        }
 
+        function runClientTimer() {
+            clearInterval(timerInt);
             let sec = slides[currentIdx].timer || 25;
             timerInt = setInterval(() => {
                 sec--;
@@ -845,9 +838,7 @@
                 
                 if (sec <= 0) {
                     clearInterval(timerInt);
-                    isVotingActive = false;
                     db.ref('isVotingActive').set(false);
-                    evaluateResult();
                 }
             }, 1000);
         }
@@ -874,7 +865,6 @@
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
-                switchMode('presentation');
                 renderPresenterMobile();
             }
         }
@@ -886,7 +876,6 @@
                 db.ref('isGameOver').set(false);
                 db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
-                switchMode('presentation');
                 renderPresenterMobile();
             }
         }
@@ -897,7 +886,6 @@
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
-            switchMode('presentation');
             renderPresenterMobile();
         }
 
@@ -908,7 +896,6 @@
             db.ref('isGameOver').set(false);
             db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
-            switchMode('presentation');
             renderPresenterMobile();
         }
 
