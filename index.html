@@ -134,7 +134,7 @@
                                 <button onclick="addPresenterVote('B')" class="bg-amber-800 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-xs">+1 за B</button>
                             </div>
                             <button onclick="startTimer()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded text-xs">
-                                <i class="fa-solid fa-play mr-1"></i> Запустить таймер
+                                <i class="fa-solid fa-play mr-1"></i> Запустить таймер и голосование
                             </button>
                             <button onclick="simulateVotes()" class="w-full bg-roman-darkRed border border-roman-gold/40 text-roman-lightGold font-bold py-2 px-3 rounded text-xs">
                                 <i class="fa-solid fa-users-rays mr-1"></i> Симулировать голоса зала
@@ -236,7 +236,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Список слайдов с кнопками перемещения -->
                 <div class="roman-card rounded-xl p-4 max-h-[600px] overflow-y-auto space-y-2">
                     <div class="text-xs font-cinzel text-roman-gold uppercase pb-2 border-b border-roman-gold/20">Список слайдов</div>
                     <div id="editor-list" class="space-y-2"></div>
@@ -399,6 +398,7 @@
         let timerInt = null;
         let hasVoted = false;
         let isGameOver = false;
+        let isVotingActive = false; // Флаг: активно ли голосование
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -412,7 +412,6 @@
                 switchMode('presentation');
             }
 
-            // Оптимизированная синхронизация слайдов из Firebase
             db.ref('slides').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -424,7 +423,7 @@
                 if (isVoter) renderVoter();
                 else {
                     renderPresentation();
-                    if (document.getElementById('editor-view').classList.contains('hidden') === false) {
+                    if (!document.getElementById('editor-view').classList.contains('hidden')) {
                         renderEditor();
                     }
                 }
@@ -443,6 +442,12 @@
 
                 db.ref('isGameOver').on('value', (snapshot) => {
                     isGameOver = !!snapshot.val();
+                    renderVoter();
+                });
+
+                // Слушаем статус активности голосования
+                db.ref('isVotingActive').on('value', (snapshot) => {
+                    isVotingActive = !!snapshot.val();
                     renderVoter();
                 });
             } else {
@@ -493,6 +498,7 @@
 
             db.ref('currentSlide').set(currentIdx);
             db.ref('isGameOver').set(false);
+            db.ref('isVotingActive').set(false); // Сбрасываем активность голосования при смене слайда
             db.ref('votes').set({ A: 0, B: 0 });
 
             document.getElementById('step-badge').innerText = currentIdx + 1;
@@ -519,7 +525,6 @@
             }
         }
 
-        // --- РЕДАКТОР С ВОЗМОЖНОСТЬЮ ПЕРЕМЕЩЕНИЯ СЛАЙДОВ ---
         function renderEditor() {
             const listEl = document.getElementById('editor-list');
             listEl.innerHTML = slides.map((s, idx) => `
@@ -537,13 +542,10 @@
         function moveSlide(index, direction) {
             const newIndex = index + direction;
             if (newIndex < 0 || newIndex >= slides.length) return;
-            
-            // Меняем местами элементы в массиве
             const temp = slides[index];
             slides[index] = slides[newIndex];
             slides[newIndex] = temp;
 
-            // Корректируем индекс текущего редактируемого слайда
             if (editingIdx === index) editingIdx = newIndex;
             else if (editingIdx === newIndex) editingIdx = index;
 
@@ -683,12 +685,19 @@
             }
         }
 
-        // --- УПРАВЛЕНИЕ ГОЛОСАМИ И НАВИГАЦИЯ ---
         function addPresenterVote(type) {
+            if (!isVotingActive) {
+                alert('Сначала запустите таймер голосования!');
+                return;
+            }
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
         }
 
         function simulateVotes() {
+            if (!isVotingActive) {
+                alert('Сначала запустите таймер голосования!');
+                return;
+            }
             const rA = Math.floor(Math.random() * 25) + 10;
             const rB = Math.floor(Math.random() * 10);
             db.ref('votes').set({ A: rA, B: rB });
@@ -708,6 +717,9 @@
 
         function startTimer() {
             clearInterval(timerInt);
+            isVotingActive = true;
+            db.ref('isVotingActive').set(true); // Разрешаем голосование зрителям в облаке
+
             let sec = slides[currentIdx].timer || 25;
             timerInt = setInterval(() => {
                 sec--;
@@ -715,6 +727,8 @@
                 document.getElementById('timer-bar').style.width = `${(sec / (slides[currentIdx].timer || 25)) * 100}%`;
                 if (sec <= 0) {
                     clearInterval(timerInt);
+                    isVotingActive = false;
+                    db.ref('isVotingActive').set(false); // Запрещаем голосование после окончания времени
                     evaluateResult();
                 }
             }, 1000);
@@ -728,6 +742,7 @@
                 document.getElementById('fail-img').src = slide.optionB.failImage || slide.image;
                 
                 db.ref('isGameOver').set(true);
+                db.ref('isVotingActive').set(false);
                 switchMode('gameover');
             } else {
                 nextSlide();
@@ -739,6 +754,7 @@
                 currentIdx++;
                 db.ref('currentSlide').set(currentIdx);
                 db.ref('isGameOver').set(false);
+                db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
@@ -749,6 +765,7 @@
                 currentIdx--;
                 db.ref('currentSlide').set(currentIdx);
                 db.ref('isGameOver').set(false);
+                db.ref('isVotingActive').set(false);
                 db.ref('votes').set({ A: 0, B: 0 });
                 switchMode('presentation');
             }
@@ -758,6 +775,7 @@
             currentIdx = lastCheckpointIdx;
             db.ref('currentSlide').set(currentIdx);
             db.ref('isGameOver').set(false);
+            db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
@@ -767,6 +785,7 @@
             lastCheckpointIdx = 0;
             db.ref('currentSlide').set(currentIdx);
             db.ref('isGameOver').set(false);
+            db.ref('isVotingActive').set(false);
             db.ref('votes').set({ A: 0, B: 0 });
             switchMode('presentation');
         }
@@ -789,10 +808,17 @@
 
             if (slide.type === 'choice') {
                 document.getElementById('voter-question').innerText = slide.questionText;
-                if (hasVoted) {
+                
+                if (!isVotingActive) {
+                    // Таймер еще не запущен
+                    btnBox.innerHTML = '<div class="text-xs text-roman-gold py-6 font-bold uppercase animate-pulse">⏳ Ожидание старта голосования лектором...</div>';
+                    statusMsg.classList.add('hidden');
+                } else if (hasVoted) {
+                    // Уже проголосовал
                     btnBox.innerHTML = '';
                     statusMsg.classList.remove('hidden');
                 } else {
+                    // Таймер идет, можно голосовать
                     statusMsg.classList.add('hidden');
                     btnBox.innerHTML = `
                         <button onclick="voterClick('A')" class="w-full bg-roman-red border border-roman-gold text-white font-bold py-4 px-4 rounded-xl text-sm active:scale-95 transition">
@@ -815,7 +841,7 @@
         }
 
         function voterClick(type) {
-            if (hasVoted || isGameOver) return;
+            if (hasVoted || isGameOver || !isVotingActive) return;
             hasVoted = true;
             db.ref('votes/' + type).transaction((current) => (current || 0) + 1);
             renderVoter();
